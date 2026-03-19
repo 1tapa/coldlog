@@ -1,0 +1,2892 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ColdLog</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:"AIzaSyAK-u6yAIeLcWaC0H5HUlVu807X-nEwQjg",
+  authDomain:"coldlogs.firebaseapp.com",
+  projectId:"coldlogs",
+  storageBucket:"coldlogs.firebasestorage.app",
+  messagingSenderId:"419444374938",
+  appId:"1:419444374938:web:0721356bffafced1284e23"
+};
+</script>
+<script>
+// ═══════════════════════════════════════════
+// NUVEM FISCAL — CONFIGURAÇÃO (SANDBOX)
+// ═══════════════════════════════════════════
+const NF_CONFIG = {
+  clientId:     'CvTAyv8sByaYDDkW7Ylk',
+  clientSecret: 'lTHItvGiQH0fklvJ7DWQiPz40uj3bRapv64hiZi0',
+  ambiente:     'homologacao',
+  baseUrl:      'https://sandbox.api.nuvemfiscal.com.br',
+  cnpjEmitente: '07504505000132',
+  razaoSocial:  'GOY REFRIGERACAO LTDA',
+  municipio:    'Curitiba',
+  uf:           'PR',
+  cMunicipio:   4106902,
+  regimeTrib:   1,
+  codServico:   '14.01',
+  descServico:  'Manutenção e reparação de equipamentos de refrigeração e transporte',
+  aliquotaISS:  2.0,
+};
+let _nfToken=null,_nfTokenExp=0;
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080c10;--surf:#0e1520;--card:#131c28;--card2:#162030;--bor:#1c2d3f;
+  --acc:#00d4ff;--acc2:#0080aa;--cold:#00eeff;
+  --diesel:#f59e0b;--acop:#00d4ff;
+  --ok:#22d45e;--nok:#ff4444;--warn:#ff9900;
+  --txt:#ddeeff;--muted:#4d7090;--lbl:#7aadcc;
+  --fh:'Barlow Condensed',sans-serif;
+  --fm:'IBM Plex Mono',monospace;
+  --fb:'Barlow',sans-serif;
+}
+html,body{background:var(--bg);color:var(--txt);font-family:var(--fb);min-height:100vh;font-size:15px;}
+
+header{background:var(--surf);border-bottom:2px solid rgba(0,212,255,.2);height:52px;display:flex;align-items:center;padding:0 .75rem;position:sticky;top:0;z-index:100;gap:.5rem;}
+.logo{font-family:var(--fh);font-size:1.55rem;font-weight:900;letter-spacing:.05em;flex-shrink:0;}
+.logo span{color:var(--acc);}
+.nav{display:flex;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nt{font-family:var(--fh);font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.25rem .65rem;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;height:52px;display:flex;align-items:center;white-space:nowrap;transition:all .2s;flex-shrink:0;}
+.nt.on{color:var(--acc);border-bottom-color:var(--acc);}
+.sc{font-family:var(--fm);font-size:.6rem;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.18);color:var(--acc);padding:.18rem .5rem;border-radius:3px;flex-shrink:0;}
+
+#sb{display:none;padding:.28rem .8rem;font-family:var(--fm);font-size:.65rem;align-items:center;gap:.4rem;}
+#sb.show{display:flex;}
+#sb.ok{background:rgba(34,212,94,.05);border-bottom:1px solid rgba(34,212,94,.12);color:var(--ok);}
+#sb.err{background:rgba(255,68,68,.07);border-bottom:1px solid rgba(255,68,68,.18);color:var(--nok);}
+
+.pg{display:none;padding:.8rem .75rem;}
+.pg.on{display:block;}
+
+.card{background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.9rem;margin-bottom:.75rem;}
+.ct{font-family:var(--fh);font-size:.63rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:.35rem;}
+.ct::before{content:'';width:3px;height:10px;background:var(--acc);border-radius:2px;}
+
+.fd{margin-bottom:.72rem;}
+label,.lb{display:block;font-family:var(--fm);font-size:.58rem;letter-spacing:.09em;text-transform:uppercase;color:var(--lbl);margin-bottom:.25rem;}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+input[type=text],input[type=tel],input[type=email],textarea,select{width:100%;background:var(--surf);border:1px solid var(--bor);color:var(--txt);font-family:var(--fb);font-size:.9rem;padding:.5rem .7rem;border-radius:6px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);}
+input::placeholder,textarea::placeholder{color:var(--muted);}
+textarea{resize:vertical;min-height:72px;}
+select option{background:var(--surf);}
+
+.tt{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.72rem;}
+.tb{padding:.55rem .25rem;border-radius:6px;border:2px solid var(--bor);background:var(--surf);color:var(--muted);cursor:pointer;font-family:var(--fh);font-size:.88rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;text-align:center;transition:all .2s;}
+.tb .ic{font-size:1.05rem;display:block;margin-bottom:.08rem;}
+.tb.sa{border-color:var(--acop);color:var(--acop);background:rgba(0,212,255,.06);}
+.tb.sd{border-color:var(--diesel);color:var(--diesel);background:rgba(245,158,11,.06);}
+
+.bgrd{display:grid;grid-template-columns:repeat(4,1fr);gap:.3rem;margin-bottom:.72rem;}
+.bb{padding:.38rem .1rem;border-radius:5px;border:1px solid var(--bor);background:var(--surf);color:var(--muted);cursor:pointer;font-family:var(--fh);font-size:.68rem;font-weight:700;text-align:center;transition:all .2s;text-transform:uppercase;}
+.bb.sl{border-color:var(--acc2);color:var(--acc);background:rgba(0,128,170,.1);}
+
+.bp{width:100%;background:var(--acc);color:#000;border:none;border-radius:6px;padding:.68rem;font-family:var(--fh);font-size:1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:.3rem;}
+.bp:hover{background:var(--cold);}
+.bp:disabled{opacity:.4;cursor:not-allowed;}
+
+.acw{position:relative;}
+.acl{position:absolute;top:100%;left:0;right:0;background:var(--card2);border:1px solid var(--acc2);border-top:none;border-radius:0 0 6px 6px;z-index:50;max-height:140px;overflow-y:auto;display:none;}
+.acl.op{display:block;}
+.aci{padding:.42rem .68rem;cursor:pointer;font-size:.82rem;border-bottom:1px solid var(--bor);}
+.aci:hover{background:rgba(0,212,255,.07);}
+.acs{font-size:.65rem;color:var(--muted);font-family:var(--fm);}
+
+.pza{border:2px dashed var(--bor);border-radius:7px;padding:.7rem;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:.72rem;}
+.pza:hover{border-color:var(--acc2);}
+.pza input{display:none;}
+.pza .pi{font-size:1.4rem;}
+.pza p{font-family:var(--fm);font-size:.58rem;color:var(--muted);letter-spacing:.05em;margin-top:.15rem;}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;margin-top:.45rem;}
+.pthumb{position:relative;aspect-ratio:1;border-radius:5px;overflow:hidden;}
+.pthumb img{width:100%;height:100%;object-fit:cover;}
+.pdel{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.78);color:#fff;border:none;border-radius:50%;width:17px;height:17px;font-size:.55rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+.tlb{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.6rem;}
+.srch{position:relative;}
+.srch input{padding-left:1.8rem;}
+.sico{position:absolute;left:.6rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:.8rem;}
+.chips{display:flex;gap:.24rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{font-family:var(--fh);font-size:.67rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.22rem .6rem;border-radius:4px;border:1px solid var(--bor);background:none;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.chip.on{border-color:var(--acc2);color:var(--acc);background:rgba(0,212,255,.07);}
+
+.osc{background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.8rem;margin-bottom:.6rem;cursor:pointer;transition:border-color .2s;}
+.osc:hover{border-color:var(--acc2);}
+.onum{font-family:var(--fm);font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-bottom:.18rem;}
+.opl{font-family:var(--fh);font-size:1.38rem;font-weight:900;letter-spacing:.06em;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;margin-bottom:.35rem;}
+.bdg{font-family:var(--fm);font-size:.55rem;letter-spacing:.04em;text-transform:uppercase;padding:.1rem .38rem;border-radius:3px;}
+.bdg-ac{background:rgba(0,212,255,.1);color:var(--acop);border:1px solid rgba(0,212,255,.22);}
+.bdg-di{background:rgba(245,158,11,.1);color:var(--diesel);border:1px solid rgba(245,158,11,.22);}
+.bdg-ab{background:rgba(255,153,0,.1);color:var(--warn);border:1px solid rgba(255,153,0,.22);}
+.bdg-co{background:rgba(34,212,94,.1);color:var(--ok);border:1px solid rgba(34,212,94,.22);}
+.ometa{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.4rem;}
+.omi .k{font-family:var(--fm);font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;}
+.omi .v{font-size:.8rem;color:var(--lbl);font-weight:500;}
+.odef{font-size:.8rem;color:var(--muted);background:var(--surf);padding:.4rem .6rem;border-radius:4px;border-left:2px solid var(--bor);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* PANEL */
+.panel{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);}
+.panel.op{display:flex;align-items:flex-end;}
+@media(min-width:600px){.panel.op{align-items:center;justify-content:center;}}
+.pbox{background:var(--card);border-radius:12px 12px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:1rem .9rem 2rem;position:relative;}
+@media(min-width:600px){.pbox{border-radius:12px;max-width:560px;max-height:88vh;}}
+.drag{width:38px;height:4px;background:var(--bor);border-radius:4px;margin:0 auto .8rem;}
+.pcl{position:absolute;top:.7rem;right:.8rem;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;}
+.ptit{font-family:var(--fh);font-size:1.3rem;font-weight:900;letter-spacing:.04em;margin-bottom:.12rem;}
+.psub{font-family:var(--fm);font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-bottom:.9rem;}
+
+/* DETAIL TABS */
+.dtabs{display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:.75rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.dtabs::-webkit-scrollbar{display:none;}
+.dnt{font-family:var(--fh);font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.2rem .6rem;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;height:36px;display:flex;align-items:center;white-space:nowrap;flex-shrink:0;transition:all .2s;}
+.dnt.on{color:var(--acc);border-bottom-color:var(--acc);}
+
+/* CHECKLIST */
+.cl-item{display:flex;align-items:center;gap:.45rem;padding:.52rem .55rem;border:1px solid var(--bor);border-radius:6px;margin-bottom:.32rem;background:var(--surf);}
+.cl-lbl{flex:1;font-size:.83rem;}
+.cl-btns{display:flex;gap:.2rem;flex-shrink:0;}
+.clb{font-family:var(--fh);font-size:.68rem;font-weight:700;padding:.18rem .4rem;border-radius:4px;border:1px solid var(--bor);background:none;color:var(--muted);cursor:pointer;transition:all .15s;}
+.clb.ok.on{background:var(--ok);border-color:var(--ok);color:#000;}
+.clb.nok.on{background:var(--nok);border-color:var(--nok);color:#fff;}
+.clb.na.on{background:var(--muted);border-color:var(--muted);color:#fff;}
+
+/* PARTS */
+.part-item{display:flex;flex-direction:column;gap:.5rem;padding:.75rem .8rem;border:1px solid var(--bor);border-radius:8px;margin-bottom:.5rem;background:var(--surf);}
+.part-top{display:flex;align-items:center;gap:.5rem;}
+.pck{width:22px;height:22px;border-radius:4px;border:2px solid var(--bor);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;transition:all .2s;}
+.pck.done{background:var(--ok);border-color:var(--ok);color:#000;}
+.pn{flex:1;font-size:.92rem;font-weight:600;}
+.pn.done{text-decoration:line-through;color:var(--muted);}
+.pqt{font-family:var(--fm);font-size:.72rem;color:var(--muted);flex-shrink:0;background:var(--card);padding:.15rem .4rem;border-radius:3px;border:1px solid var(--bor);}
+.pbx{border:none;background:none;color:var(--nok);cursor:pointer;font-size:.9rem;padding:.1rem .3rem;flex-shrink:0;opacity:.6;}
+.pbx:hover{opacity:1;}
+.part-auth-row{display:flex;gap:.3rem;flex-wrap:wrap;}
+.pab{font-family:var(--fh);font-size:.72rem;font-weight:700;letter-spacing:.04em;padding:.28rem .65rem;border-radius:5px;border:1px solid var(--bor);background:none;color:var(--muted);cursor:pointer;transition:all .18s;flex:1;text-align:center;}
+.pab:hover{filter:brightness(1.2);}
+.pab.pend.on{background:rgba(255,153,0,.18);color:var(--warn);border-color:rgba(255,153,0,.4);}
+.pab.aut.on{background:rgba(34,212,94,.18);color:var(--ok);border-color:rgba(34,212,94,.4);}
+.pab.naut.on{background:rgba(255,68,68,.18);color:var(--nok);border-color:rgba(255,68,68,.4);}
+
+.apr{display:flex;gap:.35rem;margin-bottom:.4rem;flex-wrap:wrap;}
+.apr input{flex:1;min-width:80px;}
+.apr .qty{width:58px;flex:none;}
+.apr select{width:130px;flex:none;font-size:.8rem;}
+.apr button{flex:none;}
+
+/* PHOTOS */
+.dpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.32rem;margin-top:.45rem;}
+.dpth{border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer;}
+.dpth img{width:100%;height:100%;object-fit:cover;}
+
+/* VENDAS */
+.venda-card{background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.9rem;margin-bottom:.6rem;transition:border-color .2s;}
+.venda-card:hover{border-color:var(--acc2);}
+.venda-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;flex-wrap:wrap;gap:.3rem;}
+.venda-equip{font-family:var(--fh);font-size:1.2rem;font-weight:900;letter-spacing:.04em;}
+.venda-valor{font-family:var(--fh);font-size:1.3rem;font-weight:900;color:var(--ok);letter-spacing:.03em;}
+.venda-meta{display:flex;gap:.9rem;flex-wrap:wrap;margin-bottom:.4rem;}
+.vmi .k{font-family:var(--fm);font-size:.57rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;}
+.vmi .v{font-size:.8rem;color:var(--lbl);}
+.venda-pecas{margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--bor);}
+.vp-item{display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--muted);padding:.18rem 0;}
+.vp-item::before{content:'🔩';font-size:.7rem;}
+.func-card{background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.8rem;margin-bottom:.55rem;display:flex;align-items:center;gap:.75rem;}
+.func-avatar{width:42px;height:42px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:1.1rem;font-weight:900;color:#fff;flex-shrink:0;}
+.func-info{flex:1;}
+.func-name{font-family:var(--fh);font-size:1.1rem;font-weight:800;letter-spacing:.03em;}
+.func-meta{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.2rem;}
+.func-badge{font-family:var(--fh);font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.15rem .45rem;border-radius:3px;}
+.fb-ativo{background:rgba(34,212,94,.12);color:var(--ok);border:1px solid rgba(34,212,94,.22);}
+.fb-inativo{background:rgba(255,68,68,.1);color:var(--nok);border:1px solid rgba(255,68,68,.2);}
+.fb-ferias{background:rgba(0,212,255,.1);color:var(--acc);border:1px solid rgba(0,212,255,.2);}
+.fb-afastado{background:rgba(255,153,0,.1);color:var(--warn);border:1px solid rgba(255,153,0,.2);}
+.fb-cargo{background:rgba(122,173,204,.1);color:var(--lbl);border:1px solid rgba(122,173,204,.2);}
+.func-del{background:none;border:none;color:var(--nok);cursor:pointer;font-size:.85rem;opacity:.5;flex-shrink:0;}
+.func-del:hover{opacity:1;}
+
+/* ESTOQUE */
+.est-card{background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.8rem;margin-bottom:.55rem;}
+.est-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.45rem;}
+.est-nome{font-family:var(--fh);font-size:1.05rem;font-weight:800;letter-spacing:.03em;}
+.est-cod{font-family:var(--fm);font-size:.62rem;color:var(--muted);letter-spacing:.07em;}
+.est-qty-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.45rem;}
+.est-qty-box{display:flex;align-items:center;gap:.3rem;}
+.est-qty-btn{width:28px;height:28px;border-radius:5px;border:1px solid var(--bor);background:var(--surf);color:var(--txt);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.est-qty-btn:hover{border-color:var(--acc2);color:var(--acc);}
+.est-qty-val{font-family:var(--fh);font-size:1.4rem;font-weight:900;min-width:36px;text-align:center;}
+.est-qty-val.zero{color:var(--nok);}
+.est-qty-val.baixo{color:var(--warn);}
+.est-qty-val.ok{color:var(--ok);}
+.est-meta{display:flex;gap:.75rem;flex-wrap:wrap;}
+.est-mi .k{font-family:var(--fm);font-size:.57rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:block;}
+.est-mi .v{font-size:.8rem;color:var(--lbl);}
+.est-del{background:none;border:none;color:var(--nok);cursor:pointer;font-size:.8rem;opacity:.5;}
+.est-del:hover{opacity:1;}
+.clic{background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.8rem;margin-bottom:.55rem;cursor:pointer;transition:border-color .2s;}
+.clic:hover{border-color:var(--acc2);}
+.clin{font-family:var(--fh);font-size:1.2rem;font-weight:800;margin-bottom:.28rem;}
+.clim{display:flex;gap:.85rem;flex-wrap:wrap;}
+.cii .k{font-family:var(--fm);font-size:.57rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;}
+.cii .v{font-size:.78rem;color:var(--lbl);}
+.hitem{background:var(--surf);border:1px solid var(--bor);border-radius:6px;padding:.55rem .7rem;margin-bottom:.38rem;cursor:pointer;}
+.hitem:hover{border-color:var(--acc2);}
+
+/* PRINT */
+.pmov{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.88);backdrop-filter:blur(5px);align-items:center;justify-content:center;}
+.pmov.op{display:flex;}
+.pmbox{background:#fff;color:#111;width:100%;max-width:540px;max-height:95vh;overflow-y:auto;border-radius:10px;padding:1.5rem;margin:.5rem;position:relative;font-family:var(--fb);}
+.pmcl{position:absolute;top:.8rem;right:.8rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#888;}
+.pmlogo{font-family:var(--fh);font-size:1.7rem;font-weight:900;letter-spacing:.05em;color:#0a0e14;}
+.pmlogo span{color:#0080aa;}
+.pmon{font-family:var(--fm);font-size:.63rem;color:#999;letter-spacing:.09em;margin-bottom:.9rem;}
+.pmdv{border:none;border-top:2px solid #0080aa;margin:.8rem 0;}
+.pmsc{font-family:var(--fh);font-size:.7rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#888;margin-bottom:.5rem;}
+.pmgd{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.9rem;}
+.pmi .k{font-family:var(--fm);font-size:.58rem;letter-spacing:.09em;text-transform:uppercase;color:#aaa;display:block;margin-bottom:.07rem;}
+.pmi .v{font-weight:600;font-size:.88rem;}
+.pmdf{background:#f5f7f9;border-left:3px solid #0080aa;padding:.55rem .72rem;border-radius:4px;font-size:.82rem;color:#333;line-height:1.5;margin-bottom:.9rem;}
+.pmclr{display:flex;align-items:center;gap:.45rem;padding:.45rem .55rem;border:1px solid #e5e5e5;border-radius:5px;margin-bottom:.28rem;background:#fafafa;}
+.pmcll{flex:1;font-size:.8rem;font-weight:500;}
+.pmclbs{display:flex;gap:.18rem;}
+.pmclb{font-family:var(--fh);font-size:.65rem;font-weight:700;padding:.15rem .35rem;border-radius:4px;border:1px solid #ccc;background:none;color:#aaa;cursor:pointer;transition:all .15s;}
+.pmclb.ok.on{background:#22d45e;border-color:#22d45e;color:#fff;}
+.pmclb.nok.on{background:#ff4444;border-color:#ff4444;color:#fff;}
+.pmclb.na.on{background:#888;border-color:#888;color:#fff;}
+.pmpr{display:flex;align-items:center;gap:.42rem;padding:.42rem .55rem;border:1px solid #e5e5e5;border-radius:5px;margin-bottom:.25rem;background:#fafafa;}
+.pmpck{width:15px;height:15px;border:2px solid #0080aa;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.55rem;}
+.pmpck.dp{background:#0080aa;color:#fff;}
+.pmpn{flex:1;font-size:.8rem;}
+.pmpn.stk{text-decoration:line-through;color:#aaa;}
+.pmpq{font-family:var(--fm);font-size:.65rem;color:#888;}
+.pmpa{font-family:var(--fh);font-size:.63rem;font-weight:700;padding:.12rem .35rem;border-radius:3px;}
+.pmpa.aut{background:#e6f9ee;color:#1a7a3c;border:1px solid #a8e6bb;}
+.pmpa.naut{background:#ffeaea;color:#b22222;border:1px solid #f5b0b0;}
+.pmpa.pend{background:#fff4e0;color:#8c5500;border:1px solid #f5d89a;}
+.pmphg{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;margin-top:.4rem;}
+.pmphg img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;}
+.pmsigs{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;}
+.pmsig{border-top:1px solid #ccc;padding-top:.32rem;text-align:center;font-size:.68rem;color:#aaa;}
+.pmobs{width:100%;border:1px solid #ddd;border-radius:4px;padding:.42rem;min-height:44px;font-family:var(--fb);font-size:.78rem;resize:none;margin-top:.28rem;}
+.pbtn{width:100%;background:#0080aa;color:#fff;border:none;border-radius:6px;padding:.7rem;font-family:var(--fh);font-size:1rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;margin-top:1.1rem;}
+.pbtn:hover{background:#005f8a;}
+
+/* SECONDARY BTN */
+.bs{background:none;border:1px solid var(--bor);color:var(--lbl);border-radius:6px;padding:.48rem .85rem;font-family:var(--fh);font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .2s;width:100%;margin-top:.4rem;}
+.bs:hover{border-color:var(--acc2);color:var(--acc);}
+
+.btn-sm{font-family:var(--fh);font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.3rem .65rem;border-radius:5px;border:1px solid;cursor:pointer;background:none;transition:all .2s;flex-shrink:0;}
+.bo{border-color:var(--acc2);color:var(--acc);}
+.bo:hover{background:rgba(0,212,255,.07);}
+.bg2{border-color:rgba(34,212,94,.3);color:var(--ok);}
+.bg2:hover{background:rgba(34,212,94,.07);}
+.bw{border-color:rgba(255,153,0,.3);color:var(--warn);}
+.bw:hover{background:rgba(255,153,0,.07);}
+.br{border-color:rgba(255,68,68,.28);color:var(--nok);}
+.br:hover{background:rgba(255,68,68,.07);}
+
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--muted);}
+.empty-ico{font-size:2.2rem;margin-bottom:.5rem;opacity:.35;}
+.empty-txt{font-family:var(--fh);font-size:.9rem;letter-spacing:.06em;text-transform:uppercase;}
+
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(10px);z-index:500;background:var(--card2);border:1px solid var(--acc2);color:var(--acc);font-family:var(--fm);font-size:.73rem;letter-spacing:.05em;padding:.45rem 1rem;border-radius:6px;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.err{border-color:rgba(255,68,68,.4);color:var(--nok);}
+
+.lbov{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.95);align-items:center;justify-content:center;}
+.lbov.op{display:flex;}
+.lbimg{max-width:96vw;max-height:92vh;border-radius:6px;object-fit:contain;}
+.lbcl{position:absolute;top:1rem;right:1rem;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;}
+
+@media print{
+  body,html{background:#fff!important;color:#000!important;}
+  header,#sb,.pg,.panel,.toast,.lbov,#appWrap>*:not(.pmov):not(#orcov){display:none!important;}
+  .pmov.op,#orcov.op{position:static!important;display:block!important;background:none!important;backdrop-filter:none!important;}
+  .pmov:not(.op),#orcov:not(.op){display:none!important;}
+  .pmbox,#orcContent{box-shadow:none!important;border-radius:0!important;max-height:none!important;overflow:visible!important;margin:0!important;width:100%!important;}
+  .pmcl,.pbtn{display:none!important;}
+  #orc-mo,#orc-validade,#orc-pgto,#orc-obs{border:none!important;background:transparent!important;}
+  #orc-table input{border:none!important;background:transparent!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="background:var(--card);border:1px solid var(--acc2);border-radius:12px;padding:2rem 1.8rem;width:100%;max-width:380px;box-shadow:0 0 60px rgba(0,212,255,.08);">
+    <div style="font-family:var(--fh);font-size:2rem;font-weight:900;letter-spacing:.05em;margin-bottom:.1rem;">Cold<span style="color:var(--acc)">Log</span></div>
+    <div style="font-family:var(--fm);font-size:.65rem;color:var(--muted);letter-spacing:.1em;margin-bottom:1.8rem;">SISTEMA DE REFRIGERAÇÃO · ACESSO</div>
+    <div class="fd"><label>E-mail</label><input type="email" id="lEmail" placeholder="seu@email.com"></div>
+    <div class="fd"><label>Senha</label><input type="password" id="lPass" placeholder="••••••••"></div>
+    <div id="lMsg" style="display:none;font-family:var(--fm);font-size:.72rem;margin-bottom:.7rem;"></div>
+    <button class="bp" id="lBtn" onclick="doLogin()" style="margin-top:.2rem">Entrar →</button>
+    <div style="font-family:var(--fm);font-size:.62rem;color:var(--muted);text-align:center;margin-top:1rem;line-height:1.6">Não tem acesso? Solicite ao administrador.</div>
+  </div>
+</div>
+
+<!-- APP WRAPPER -->
+<div id="appWrap" style="display:none">
+
+<header>
+  <div class="logo">Cold<span>Log</span></div>
+  <nav class="nav">
+    <button class="nt on" id="nt-os"    onclick="goPage('os')">📋 OS</button>
+    <button class="nt"    id="nt-cli"   onclick="goPage('cli')">👤 Clientes</button>
+    <button class="nt"    id="nt-func"  onclick="goPage('func')">👷 Funcionários</button>
+    <button class="nt"    id="nt-est"   onclick="goPage('est')">🔩 Estoque</button>
+    <button class="nt"    id="nt-new"   onclick="goPage('new')">➕ Nova OS</button>
+    <button class="nt"    id="nt-users" onclick="goPage('users');renderUsuarios()" style="display:none">🔐 Usuários</button>
+    <button class="nt"    id="nt-vendas" onclick="goPage('vendas')" style="display:none">💵 Vendas</button>
+  </nav>
+  <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+    <div class="sc" id="sc">OS: —</div>
+    <div style="font-family:var(--fm);font-size:.58rem;color:var(--muted);display:none" id="userBadge" class="sc"></div>
+    <button onclick="logout()" style="background:none;border:1px solid var(--bor);color:var(--muted);border-radius:4px;padding:.18rem .5rem;cursor:pointer;font-size:.75rem;flex-shrink:0" title="Sair">⏻</button>
+  </div>
+</header>
+<div id="sb"></div>
+
+<!-- NOVA OS -->
+<div class="pg" id="pg-new">
+  <div class="card">
+    <div class="ct">Atendimento</div>
+    <div class="fr2">
+      <div class="fd"><label>Placa</label><input type="text" id="nPlaca" placeholder="ABC-1234" maxlength="8" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fd">
+        <label>Técnico</label>
+        <div class="acw">
+          <input type="text" id="nTec" placeholder="Nome do técnico..." oninput="acFunc(this.value,'nTec','acl3')" autocomplete="off">
+          <div class="acl" id="acl3"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fd">
+      <label>Cliente</label>
+      <div class="acw">
+        <input type="text" id="nCli" placeholder="Nome ou empresa..." oninput="acSearch(this.value,'nCli','acl1')" autocomplete="off">
+        <div class="acl" id="acl1"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Equipamento</div>
+    <div class="lb" style="margin-bottom:.4rem">Marca</div>
+    <div class="bgrd" id="bbg">
+      <button class="bb" onclick="selBrand(this,'Carrier')">Carrier</button>
+      <button class="bb" onclick="selBrand(this,'Thermo King')">Thermo King</button>
+      <button class="bb" onclick="selBrand(this,'Frigo King')">Frigo King</button>
+      <button class="bb" onclick="selBrand(this,'Thermo Star')">Thermo Star</button>
+      <button class="bb" onclick="selBrand(this,'Rodofrio')">Rodofrio</button>
+      <button class="bb" onclick="selBrand(this,'Argi')">Argi</button>
+      <button class="bb" onclick="selBrand(this,'Goy')">Goy</button>
+      <button class="bb" onclick="selBrand(this,'Outros')">Outros</button>
+    </div>
+
+    <!-- MODELO -->
+    <div class="lb" style="margin-bottom:.4rem">Modelo</div>
+    <div id="modeloWrap" style="margin-bottom:.72rem">
+      <!-- preenchido dinamicamente ao selecionar marca -->
+      <input type="text" id="nModelo" placeholder="Selecione uma marca primeiro..." disabled
+        style="opacity:.5">
+    </div>
+
+    <div class="lb" style="margin-bottom:.4rem">Tipo</div>
+    <div class="tt">
+      <button class="tb" id="nBtnAc" onclick="selType('acoplado')"><span class="ic">⚡</span>Acoplado</button>
+      <button class="tb" id="nBtnDi" onclick="selType('diesel')"><span class="ic">🔧</span>Diesel</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Defeito / Serviço</div>
+    <textarea id="nDef" placeholder="Descreva o defeito e o serviço a executar..."></textarea>
+  </div>
+  <div class="card">
+    <div class="ct">Fotos</div>
+    <div class="pza" onclick="document.getElementById('nFotos').click()">
+      <div class="pi">📷</div>
+      <p>TOQUE PARA ADICIONAR FOTOS</p>
+      <input type="file" id="nFotos" accept="image/*" multiple onchange="addPhotos(this)">
+    </div>
+    <div class="pgrid" id="nPhG"></div>
+  </div>
+  <button class="bp" id="nBtn" onclick="registrarOS()">⊕ Registrar Ordem de Serviço</button>
+</div>
+
+<!-- OS LIST -->
+<div class="pg on" id="pg-os">
+  <div class="tlb">
+    <div class="srch"><span class="sico">🔍</span><input type="text" id="osQ" placeholder="Placa, cliente, técnico..." oninput="renderOS()"></div>
+    <div class="chips">
+      <button class="chip on" id="cf-todos"     onclick="setF('todos')">Todos</button>
+      <button class="chip"    id="cf-aberto"    onclick="setF('aberto')">Aberto</button>
+      <button class="chip"    id="cf-concluido" onclick="setF('concluido')">Concluído</button>
+      <button class="chip"    id="cf-acoplado"  onclick="setF('acoplado')">Acoplado</button>
+      <button class="chip"    id="cf-diesel"    onclick="setF('diesel')">Diesel</button>
+    </div>
+  </div>
+  <div id="osLst"></div>
+</div>
+
+<!-- CLIENTES -->
+<div class="pg" id="pg-cli">
+  <div class="card">
+    <div class="ct">Cadastrar Cliente</div>
+    <div class="fd"><label>Nome / Razão Social</label><input type="text" id="cNome" placeholder="Nome completo ou Razão Social"></div>
+    <div class="fr2">
+      <div class="fd"><label>CNPJ / CPF</label><input type="text" id="cDoc" placeholder="000.000.000-00" oninput="autoTipoCliente(this.value)"></div>
+      <div class="fd"><label>Tipo</label>
+        <select id="cTipo">
+          <option value="pf">Pessoa Física</option>
+          <option value="pj">Pessoa Jurídica</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Telefone</label><input type="tel" id="cTel" placeholder="(41) 99999-9999"></div>
+      <div class="fd"><label>E-mail</label><input type="email" id="cEmail" placeholder="email@empresa.com"></div>
+    </div>
+    <div class="fd"><label>Inscrição Estadual <span style="font-size:.55rem;color:var(--muted)">(PJ — deixe em branco se isento)</span></label>
+      <input type="text" id="cIe" placeholder="Ex: 123.456.789-00 ou ISENTO"></div>
+
+    <!-- ENDEREÇO -->
+    <div style="font-family:var(--fh);font-size:.63rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:.75rem 0 .5rem;padding-top:.65rem;border-top:1px solid var(--bor);display:flex;align-items:center;gap:.35rem">
+      <span style="width:3px;height:10px;background:var(--acc);border-radius:2px;display:inline-block"></span>
+      Endereço Completo
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>CEP</label><input type="text" id="cCep" placeholder="00000-000" maxlength="9" oninput="buscarCep(this.value)"></div>
+      <div class="fd"><label>Estado (UF)</label><input type="text" id="cUf" placeholder="PR" maxlength="2" style="text-transform:uppercase"></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Logradouro</label><input type="text" id="cLogradouro" placeholder="Rua, Av, etc."></div>
+      <div class="fd"><label>Número</label><input type="text" id="cNumero" placeholder="Ex: 123"></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Bairro</label><input type="text" id="cBairro" placeholder="Bairro"></div>
+      <div class="fd"><label>Complemento</label><input type="text" id="cCompl" placeholder="Apto, Sala, etc."></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Município</label><input type="text" id="cMunicipio" placeholder="Curitiba"></div>
+      <div class="fd"><label>Cód. IBGE Município</label><input type="text" id="cCodIbge" placeholder="Ex: 4106902"></div>
+    </div>
+    <div class="fd"><label>Observações</label><textarea id="cObs" style="min-height:46px" placeholder="Notas..."></textarea></div>
+    <button class="bp" onclick="salvarCliente()">💾 Salvar Cliente</button>
+  </div>
+  <div class="card">
+    <div class="ct">Clientes Cadastrados</div>
+    <div class="srch" style="margin-bottom:.6rem"><span class="sico">🔍</span><input type="text" id="cliQ" placeholder="Buscar..." oninput="renderClientes()"></div>
+    <div id="cliLst"></div>
+  </div>
+</div>
+
+<!-- FUNCIONÁRIOS -->
+<div class="pg" id="pg-func">
+  <div class="card">
+    <div class="ct">Cadastrar Funcionário</div>
+    <div class="fr2">
+      <div class="fd"><label>Nome</label><input type="text" id="fNome" placeholder="Nome completo"></div>
+      <div class="fd"><label>Cargo</label>
+        <select id="fCargo">
+          <option value="tecnico">Técnico</option>
+          <option value="auxiliar">Auxiliar</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="administrativo">Administrativo</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Telefone</label><input type="tel" id="fTel" placeholder="(21) 99999-9999"></div>
+      <div class="fd"><label>CPF</label><input type="text" id="fCpf" placeholder="000.000.000-00"></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Data de Admissão</label><input type="text" id="fAdmissao" placeholder="dd/mm/aaaa"></div>
+      <div class="fd"><label>Status</label>
+        <select id="fStatus">
+          <option value="ativo">Ativo</option>
+          <option value="inativo">Inativo</option>
+          <option value="ferias">Férias</option>
+          <option value="afastado">Afastado</option>
+        </select>
+      </div>
+    </div>
+    <div class="fd"><label>Observações</label><textarea id="fObs" style="min-height:50px" placeholder="Especialidades, certificações..."></textarea></div>
+    <button class="bp" onclick="salvarFunc()">💾 Salvar Funcionário</button>
+  </div>
+  <div class="card">
+    <div class="ct">Equipe Cadastrada</div>
+    <div class="srch" style="margin-bottom:.6rem"><span class="sico">🔍</span><input type="text" id="funcQ" placeholder="Buscar funcionário..." oninput="renderFunc()"></div>
+    <div id="funcLst"></div>
+  </div>
+</div>
+
+<!-- ESTOQUE DE PEÇAS -->
+<div class="pg" id="pg-est">
+  <div class="card">
+    <div class="ct">Cadastrar Peça no Estoque</div>
+    <div class="fr2">
+      <div class="fd"><label>Nome da Peça</label><input type="text" id="eNome" placeholder="Ex: Correia compressor"></div>
+      <div class="fd"><label>Código / Referência</label><input type="text" id="eCod" placeholder="Ex: CC-001"></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Quantidade em Estoque</label><input type="text" id="eQty" placeholder="0"></div>
+      <div class="fd"><label>Quantidade Mínima</label><input type="text" id="eQtyMin" placeholder="2"></div>
+    </div>
+    <div class="fr2" id="estCustoField">
+      <div class="fd"><label>Valor de Custo (R$)</label><input type="text" id="eCusto" placeholder="0,00"></div>
+      <div class="fd"><label>Valor de Venda (R$)</label><input type="text" id="eVenda" placeholder="0,00"></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Compatibilidade</label><input type="text" id="eCompat" placeholder="Ex: Thermo King, Carrier"></div>
+      <div class="fd"><label>Localização</label><input type="text" id="eLoc" placeholder="Ex: Prateleira A3"></div>
+    </div>
+
+    <!-- DADOS FISCAIS -->
+    <div style="font-family:var(--fh);font-size:.63rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:.8rem 0 .5rem;padding-top:.7rem;border-top:1px solid var(--bor);display:flex;align-items:center;gap:.35rem">
+      <span style="width:3px;height:10px;background:var(--diesel);border-radius:2px;display:inline-block"></span>
+      Dados Fiscais (NF-e)
+    </div>
+    <div class="fr2">
+      <div class="fd">
+        <label>NCM <span style="font-size:.55rem;color:var(--muted)">(código fiscal do produto)</span></label>
+        <div style="position:relative">
+          <input type="text" id="eNcm" placeholder="Ex: 8414.30.19" maxlength="10" oninput="this.value=this.value.replace(/[^\d.]/g,'')">
+          <div style="font-family:var(--fm);font-size:.58rem;color:var(--muted);margin-top:.2rem" id="eNcmDesc"></div>
+        </div>
+      </div>
+      <div class="fd">
+        <label>CFOP <span style="font-size:.55rem;color:var(--muted)">(operação fiscal)</span></label>
+        <select id="eCfop">
+          <option value="5102">5102 — Venda dentro do estado</option>
+          <option value="6102">6102 — Venda fora do estado</option>
+          <option value="5405">5405 — Venda Simples Nacional (ST)</option>
+          <option value="5949">5949 — Outra saída</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr2">
+      <div class="fd">
+        <label>CSOSN <span style="font-size:.55rem;color:var(--muted)">(Simples Nacional)</span></label>
+        <select id="eCsosn">
+          <option value="400">400 — Não tributado (mais comum Simples)</option>
+          <option value="102">102 — Tributado sem permissão de crédito</option>
+          <option value="500">500 — Com substituição tributária</option>
+          <option value="900">900 — Outros</option>
+        </select>
+      </div>
+      <div class="fd">
+        <label>Unidade <span style="font-size:.55rem;color:var(--muted)">(comercial)</span></label>
+        <select id="eUnidade">
+          <option value="UN">UN — Unidade</option>
+          <option value="PC">PC — Peça</option>
+          <option value="KG">KG — Quilograma</option>
+          <option value="L">L — Litro</option>
+          <option value="M">M — Metro</option>
+          <option value="CX">CX — Caixa</option>
+          <option value="KIT">KIT — Kit</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr2" id="estVendaField">
+      <div class="fd">
+        <label>Alíquota PIS % <span style="font-size:.55rem;color:var(--muted)">(Simples = 0)</span></label>
+        <input type="text" id="eAliqPis" placeholder="0.00" value="0">
+      </div>
+      <div class="fd">
+        <label>Alíquota COFINS % <span style="font-size:.55rem;color:var(--muted)">(Simples = 0)</span></label>
+        <input type="text" id="eAliqCofins" placeholder="0.00" value="0">
+      </div>
+    </div>
+
+    <div class="fd"><label>Observações</label><textarea id="eObs" style="min-height:46px" placeholder="Notas sobre a peça..."></textarea></div>
+    <button class="bp" onclick="salvarPeca()">💾 Cadastrar no Estoque</button>
+  </div>
+  <div class="card">
+    <div class="ct">Estoque de Peças</div>
+    <div class="tlb">
+      <div class="srch"><span class="sico">🔍</span><input type="text" id="estQ" placeholder="Buscar peça, código..." oninput="renderEstoque()"></div>
+      <div class="chips">
+        <button class="chip on" id="ef-todos"  onclick="setEF('todos')">Todos</button>
+        <button class="chip"    id="ef-ok"     onclick="setEF('ok')">✅ OK</button>
+        <button class="chip"    id="ef-baixo"  onclick="setEF('baixo')">⚠️ Baixo</button>
+        <button class="chip"    id="ef-zero"   onclick="setEF('zero')">❌ Zerado</button>
+      </div>
+    </div>
+    <div id="estLst"></div>
+  </div>
+</div>
+<div class="panel" id="detP">
+  <div class="pbox">
+    <div class="drag"></div>
+    <button class="pcl" onclick="closeDetail()">✕</button>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.45rem;">
+      <div>
+        <div style="font-family:var(--fm);font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-bottom:.15rem;" id="dpN">OS #0000</div>
+        <div style="font-family:var(--fh);font-size:1.3rem;font-weight:900;letter-spacing:.04em;" id="dpP">—</div>
+      </div>
+      <div style="display:flex;gap:.22rem;flex-wrap:wrap;" id="dpB"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem;" id="dpM"></div>
+
+    <div class="dtabs">
+      <button class="dnt on" id="dt-info"   onclick="dpTab('info')">📋 Info</button>
+      <button class="dnt"    id="dt-check"  onclick="dpTab('check')">✔ Checklist</button>
+      <button class="dnt"    id="dt-pecas"  onclick="dpTab('pecas')">🔩 Peças</button>
+      <button class="dnt"    id="dt-fotos"  onclick="dpTab('fotos')">📷 Fotos</button>
+      <button class="dnt"    id="dt-editar" onclick="dpTab('editar')">✏️ Editar</button>
+    </div>
+
+    <!-- INFO -->
+    <div id="dtb-info">
+      <div style="font-family:var(--fh);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;">Defeito / Serviço</div>
+      <div style="background:var(--surf);padding:.55rem .7rem;border-radius:6px;font-size:.84rem;line-height:1.5;border-left:2px solid var(--acc2);margin-bottom:.85rem;" id="dpDf">—</div>
+      <div style="display:flex;gap:.3rem;flex-wrap:wrap;">
+        <button class="btn-sm bo" onclick="openPrint()">🖨️ OS / Checklist</button>
+        <button class="btn-sm" id="btnOrcamento" style="border-color:rgba(34,212,94,.35);color:var(--ok);display:none" onclick="openOrcamento()">💰 Orçamento</button>
+        <button class="btn-sm" id="btnNFSe" style="border-color:rgba(0,212,255,.35);color:var(--acc);display:none" onclick="openNFPainel('nfse')">📄 NFS-e Serviço</button>
+        <button class="btn-sm" id="btnNFe" style="border-color:rgba(245,158,11,.35);color:var(--diesel);display:none" onclick="openNFPainel('nfe')">🧾 NF-e Peças</button>
+        <button class="btn-sm bg2" id="dpBtS" onclick="toggleStatus()">✓ Concluir</button>
+        <button class="btn-sm br" onclick="deleteOS()">Excluir</button>
+      </div>
+      <!-- Notas já emitidas -->
+      <div id="notasEmitidas" style="margin-top:.8rem"></div>
+    </div>
+
+    <!-- CHECKLIST -->
+    <div id="dtb-check" style="display:none">
+      <div id="clLst"></div>
+      <button class="bs" onclick="saveCL()">💾 Salvar Checklist</button>
+    </div>
+
+    <!-- PEÇAS -->
+    <div id="dtb-pecas" style="display:none">
+      <div id="partAddBlock">
+        <div style="font-family:var(--fh);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Adicionar Peça</div>
+        <div class="acw" style="margin-bottom:.4rem">
+          <input type="text" id="pNome" placeholder="Buscar peça do estoque ou digitar..." oninput="acEstoque(this.value)" autocomplete="off">
+          <div class="acl" id="aclEst"></div>
+        </div>
+        <div class="apr" style="margin-bottom:.4rem">
+          <div style="flex:1">
+            <input type="text" id="pQty" placeholder="Qtd" style="width:100%">
+          </div>
+          <div style="flex:1;font-family:var(--fm);font-size:.7rem;color:var(--muted);padding:.5rem .4rem;display:flex;align-items:center;" id="pPreview"></div>
+        </div>
+        <div class="apr" style="margin-bottom:.7rem">
+          <select id="pAuth">
+            <option value="pendente">⏳ Pendente</option>
+            <option value="autorizado">✅ Autorizado</option>
+            <option value="nao_autorizado">❌ Não Autorizado</option>
+          </select>
+          <button class="btn-sm bo" onclick="addPart()" style="padding:.38rem .75rem">+ Add</button>
+        </div>
+      </div>
+      <div id="prtLst"></div>
+    </div>
+
+    <!-- FOTOS -->
+    <div id="dtb-fotos" style="display:none">
+      <div class="pza" onclick="document.getElementById('dFotos').click()">
+        <div class="pi">📷</div><p>ADICIONAR FOTOS</p>
+        <input type="file" id="dFotos" accept="image/*" multiple onchange="addDetailPhotos(this)">
+      </div>
+      <div class="dpgrid" id="dpPhG"></div>
+    </div>
+
+    <!-- EDITAR -->
+    <div id="dtb-editar" style="display:none">
+      <div class="fd"><label>Placa</label><input type="text" id="ePlaca" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fd">
+        <label>Técnico</label>
+        <div class="acw">
+          <input type="text" id="eTec" oninput="acFunc(this.value,'eTec','acl4')" autocomplete="off">
+          <div class="acl" id="acl4"></div>
+        </div>
+      </div>
+      <div class="fd">
+        <label>Cliente</label>
+        <div class="acw">
+          <input type="text" id="eCli" oninput="acSearch(this.value,'eCli','acl2')" autocomplete="off">
+          <div class="acl" id="acl2"></div>
+        </div>
+      </div>
+      <div class="fd">
+        <label>Marca</label>
+        <select id="eMarca" onchange="renderEditModelo(this.value)">
+          <option>Carrier</option><option>Thermo King</option><option>Frigo King</option>
+          <option>Thermo Star</option><option>Rodofrio</option><option>Argi</option><option>Goy</option><option>Outros</option>
+        </select>
+      </div>
+      <div class="fd">
+        <label>Modelo</label>
+        <div id="eModeloWrap">
+          <input type="text" id="eModelo" placeholder="Modelo do equipamento...">
+        </div>
+      </div>
+      <div class="lb" style="margin-bottom:.38rem">Tipo</div>
+      <div class="tt" style="margin-bottom:.7rem">
+        <button class="tb" id="eBtnAc" onclick="eSelType('acoplado')"><span class="ic">⚡</span>Acoplado</button>
+        <button class="tb" id="eBtnDi" onclick="eSelType('diesel')"><span class="ic">🔧</span>Diesel</button>
+      </div>
+      <div class="fd"><label>Defeito / Serviço</label><textarea id="eDef"></textarea></div>
+      <button class="bp" onclick="saveEdit()">💾 Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTE PANEL -->
+<div class="panel" id="cliP">
+  <div class="pbox">
+    <div class="drag"></div>
+    <button class="pcl" onclick="document.getElementById('cliP').classList.remove('op')">✕</button>
+    <div class="ptit" id="cpName">—</div>
+    <div id="cpInfo" style="margin-bottom:.8rem"></div>
+    <div class="ct">Histórico de OS</div>
+    <div id="cpHist"></div>
+  </div>
+</div>
+
+<!-- PRINT MODAL -->
+<div class="pmov" id="pmov">
+  <div class="pmbox">
+    <button class="pmcl" onclick="document.getElementById('pmov').classList.remove('op')">✕</button>
+    <div class="pmlogo">Cold<span>Log</span></div>
+    <div class="pmon" id="pm-on">OS #0000</div>
+    <hr class="pmdv">
+    <div class="pmgd" id="pm-gd"></div>
+    <div class="pmsc">Defeito / Serviço</div>
+    <div class="pmdf" id="pm-df">—</div>
+    <hr class="pmdv">
+    <div class="pmsc" id="pm-clt">✔ Checklist</div>
+    <div id="pm-cl"></div>
+    <div id="pm-ps" style="display:none"><hr class="pmdv"><div class="pmsc">🔩 Peças</div><div id="pm-p"></div></div>
+    <div id="pm-fs" style="display:none"><hr class="pmdv"><div class="pmsc">📷 Fotos</div><div class="pmphg" id="pm-ph"></div></div>
+    <div style="margin-top:.75rem"><div class="pmsc">Observações</div><textarea class="pmobs" placeholder="Observações adicionais..."></textarea></div>
+    <div class="pmsigs"><div class="pmsig">Assinatura do Técnico</div><div class="pmsig">Assinatura do Cliente</div></div>
+    <button class="pbtn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  </div>
+</div>
+
+<!-- ORÇAMENTO MODAL -->
+<div class="pmov" id="orcov">
+  <div class="pmbox" id="orcContent">
+    <button class="pmcl" onclick="document.getElementById('orcov').classList.remove('op')">✕</button>
+
+    <!-- HEADER EMPRESA -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
+      <div>
+        <div class="pmlogo">Cold<span>Log</span></div>
+        <div style="font-family:var(--fm);font-size:.6rem;color:#999;letter-spacing:.08em">SERVIÇOS DE REFRIGERAÇÃO</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--fh);font-size:1.2rem;font-weight:900;color:#0076aa;letter-spacing:.05em">ORÇAMENTO</div>
+        <div style="font-family:var(--fm);font-size:.65rem;color:#999" id="orc-num">Nº 0000</div>
+        <div style="font-family:var(--fm);font-size:.65rem;color:#999" id="orc-data"></div>
+      </div>
+    </div>
+
+    <hr class="pmdv">
+
+    <!-- DADOS -->
+    <div class="pmgd" id="orc-gd" style="margin-bottom:.8rem"></div>
+
+    <!-- DEFEITO -->
+    <div class="pmsc">Descrição do Serviço</div>
+    <div class="pmdf" id="orc-df" style="margin-bottom:1rem">—</div>
+
+    <hr class="pmdv">
+
+    <!-- TABELA DE PEÇAS E SERVIÇOS -->
+    <div class="pmsc">Itens do Orçamento</div>
+    <table id="orc-table" style="width:100%;border-collapse:collapse;margin-top:.5rem;margin-bottom:.2rem;font-size:.82rem">
+      <thead>
+        <tr style="background:#f0f4f8;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:#666">
+          <th style="text-align:left;padding:.4rem .5rem;border-bottom:2px solid #ddd">Item</th>
+          <th style="text-align:center;padding:.4rem .5rem;border-bottom:2px solid #ddd;width:50px">Qtd</th>
+          <th style="text-align:right;padding:.4rem .5rem;border-bottom:2px solid #ddd;width:80px">Unit.</th>
+          <th style="text-align:right;padding:.4rem .5rem;border-bottom:2px solid #ddd;width:90px">Total</th>
+        </tr>
+      </thead>
+      <tbody id="orc-items"></tbody>
+    </table>
+
+    <!-- LINHA DE MÃO DE OBRA -->
+    <div style="margin-top:.8rem;margin-bottom:1rem">
+      <div class="pmsc">Mão de Obra</div>
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid #eee">
+        <span style="flex:1;font-size:.85rem">Serviço de manutenção</span>
+        <span style="font-size:.75rem;color:#888">R$</span>
+        <input type="text" id="orc-mo" placeholder="0,00" oninput="calcTotal()"
+          style="width:90px;border:1px solid #ddd;border-radius:4px;padding:.3rem .5rem;font-size:.85rem;text-align:right;background:#fff;color:#111">
+      </div>
+    </div>
+
+    <!-- TOTAL -->
+    <div style="background:#f0f4f8;border-radius:6px;padding:.8rem 1rem;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <span style="font-size:.8rem;color:#666">Subtotal Peças</span>
+        <span style="font-size:.85rem;font-weight:600" id="orc-sub">R$ 0,00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <span style="font-size:.8rem;color:#666">Mão de Obra</span>
+        <span style="font-size:.85rem;font-weight:600" id="orc-mo-total">R$ 0,00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid #0076aa;padding-top:.4rem;margin-top:.2rem">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#0076aa">TOTAL</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:#0076aa" id="orc-total">R$ 0,00</span>
+      </div>
+    </div>
+
+    <!-- VALIDADE E OBS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.8rem">
+      <div>
+        <div class="pmsc">Validade do Orçamento</div>
+        <input type="text" id="orc-validade" placeholder="Ex: 10 dias" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:.4rem .6rem;font-size:.85rem;background:#fff;color:#111">
+      </div>
+      <div>
+        <div class="pmsc">Forma de Pagamento</div>
+        <input type="text" id="orc-pgto" placeholder="Ex: À vista, 50% entrada" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:.4rem .6rem;font-size:.85rem;background:#fff;color:#111">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem">
+      <div class="pmsc">Observações</div>
+      <textarea class="pmobs" id="orc-obs" placeholder="Condições, garantia, observações..."></textarea>
+    </div>
+
+    <div class="pmsigs">
+      <div class="pmsig">Responsável Técnico</div>
+      <div class="pmsig">Aprovação do Cliente</div>
+    </div>
+
+    <button class="pbtn" onclick="window.print()">🖨️ Imprimir Orçamento / PDF</button>
+  </div>
+</div>
+
+<!-- USUÁRIOS (só admin) -->
+<div class="pg" id="pg-users">
+  <div class="card">
+    <div class="ct">Criar Novo Usuário</div>
+    <div class="fr2">
+      <div class="fd"><label>Nome</label><input type="text" id="uNome" placeholder="Nome completo"></div>
+      <div class="fd"><label>E-mail</label><input type="email" id="uEmail" placeholder="email@empresa.com"></div>
+    </div>
+    <div class="fr2">
+      <div class="fd"><label>Senha (mín. 6 dígitos)</label><input type="password" id="uPass" placeholder="••••••••"></div>
+      <div class="fd">
+        <label>Nível de Acesso</label>
+        <select id="uRole">
+          <option value="tecnico">🔧 Técnico — cria OS, edita, fotos</option>
+          <option value="supervisor">🔑 Supervisor — + autoriza peças, exclui OS</option>
+          <option value="admin">👑 Admin — acesso total</option>
+        </select>
+      </div>
+    </div>
+    <div class="fd">
+      <label>Sua senha (confirmação)</label>
+      <input type="password" id="uAdminPass" placeholder="Sua senha de admin para confirmar">
+    </div>
+    <div style="background:rgba(255,153,0,.07);border:1px solid rgba(255,153,0,.2);border-radius:6px;padding:.6rem .8rem;margin-bottom:.7rem;font-size:.8rem;color:var(--warn);">
+      ⚠️ <strong>Níveis de acesso:</strong><br>
+      🔧 <strong>Técnico</strong> — cria OS, edita dados, adiciona peças/fotos/checklist. Não pode autorizar peças, excluir OS ou gerenciar usuários.<br>
+      🔑 <strong>Supervisor</strong> — tudo do técnico + autoriza/rejeita peças e exclui OS.<br>
+      👑 <strong>Admin</strong> — acesso total, incluindo criar e gerenciar usuários.
+    </div>
+    <button class="bp" id="uBtn" onclick="criarUsuario()">➕ Criar Usuário</button>
+  </div>
+  <div class="card">
+    <div class="ct">Usuários Cadastrados</div>
+    <div id="userLst"><div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.8rem">Clique em 🔐 Usuários para carregar</div></div>
+  </div>
+</div>
+
+<!-- VENDAS DE EQUIPAMENTOS -->
+<div class="pg" id="pg-vendas">
+
+  <!-- FORM NOVA VENDA -->
+  <div class="card">
+    <div class="ct">Registrar Venda de Equipamento</div>
+
+    <div class="fr2">
+      <div class="fd"><label>Marca</label>
+        <select id="vMarca" onchange="renderVendaModelo(this.value)">
+          <option value="">Selecione...</option>
+          <option>Carrier</option><option>Thermo King</option><option>Frigo King</option>
+          <option>Thermo Star</option><option>Rodofrio</option><option>Argi</option><option>Goy</option><option>Outros</option>
+        </select>
+      </div>
+      <div class="fd"><label>Ano</label><input type="text" id="vAno" placeholder="Ex: 2019"></div>
+    </div>
+
+    <div class="fd"><label>Modelo</label>
+      <div id="vModeloWrap">
+        <input type="text" id="vModelo" placeholder="Selecione a marca primeiro..." disabled style="opacity:.5">
+      </div>
+    </div>
+
+    <div class="fr2">
+      <div class="fd"><label>Horas de Uso</label><input type="text" id="vHoras" placeholder="Ex: 12.500 h"></div>
+      <div class="fd"><label>Valor de Venda (R$)</label><input type="text" id="vValor" placeholder="0,00"></div>
+    </div>
+
+    <div class="fr2">
+      <div class="fd"><label>Comprador / Cliente</label>
+        <div class="acw">
+          <input type="text" id="vCliente" placeholder="Nome ou empresa..." oninput="acSearch(this.value,'vCliente','aclVCli')" autocomplete="off">
+          <div class="acl" id="aclVCli"></div>
+        </div>
+      </div>
+      <div class="fd"><label>Data da Venda</label><input type="text" id="vData" placeholder="dd/mm/aaaa"></div>
+    </div>
+
+    <div class="fd"><label>Observações</label>
+      <textarea id="vObs" style="min-height:50px" placeholder="Condições, garantia, histórico..."></textarea>
+    </div>
+  </div>
+
+  <!-- PEÇAS TROCADAS NA REVISÃO -->
+  <div class="card">
+    <div class="ct">Peças Trocadas / Revisão</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:.7rem;font-family:var(--fm)">
+      ⚠️ Cada peça adicionada aqui dará <strong>baixa automática no estoque</strong> ao salvar a venda.
+    </div>
+    <div class="acw" style="margin-bottom:.4rem">
+      <input type="text" id="vPecaNome" placeholder="Buscar peça do estoque..." oninput="acVendaEstoque(this.value)" autocomplete="off">
+      <div class="acl" id="aclVEst"></div>
+    </div>
+    <div class="apr" style="margin-bottom:.6rem">
+      <input type="text" id="vPecaQty" placeholder="Qtd" style="width:70px;flex:none">
+      <span style="font-size:.75rem;color:var(--muted);font-family:var(--fm);display:flex;align-items:center;padding:0 .3rem" id="vPecaPreview"></span>
+      <button class="btn-sm bo" onclick="addVendaPeca()" style="flex:none;padding:.4rem .9rem">+ Adicionar</button>
+    </div>
+    <div id="vPecaLst"></div>
+  </div>
+
+  <button class="bp" id="vBtn" onclick="salvarVenda()">💵 Registrar Venda</button>
+
+  <!-- LISTA DE VENDAS -->
+  <div class="card" style="margin-top:1.2rem">
+    <div class="ct">Vendas Registradas</div>
+    <div class="srch" style="margin-bottom:.6rem">
+      <span class="sico">🔍</span>
+      <input type="text" id="vendasQ" placeholder="Buscar marca, modelo, cliente..." oninput="renderVendas()">
+    </div>
+    <div id="vendasLst"></div>
+  </div>
+</div>
+
+</div><!-- fim #appWrap -->
+
+<!-- PAINEL EMISSÃO NF -->
+<div class="pmov" id="nfPainel">
+  <div class="pmbox" style="max-width:620px;padding:1.2rem">
+    <button class="pmcl" onclick="document.getElementById('nfPainel').classList.remove('op')">✕</button>
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">
+      <div style="font-size:1.6rem" id="nfpIcon">📄</div>
+      <div>
+        <div style="font-family:var(--fh);font-size:1.3rem;font-weight:900;color:#111" id="nfpTitle">Emitir Nota Fiscal</div>
+        <div style="font-family:var(--fm);font-size:.65rem;color:#888" id="nfpOsRef">OS #0000</div>
+      </div>
+    </div>
+    <hr class="pmdv">
+
+    <!-- ABAS -->
+    <div style="display:flex;border-bottom:2px solid #eee;margin-bottom:1rem">
+      <button id="nfpTab-nfse" onclick="nfpTab('nfse')" style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.4rem 1rem;border:none;background:none;cursor:pointer;color:#0076aa;border-bottom:2px solid #0076aa;margin-bottom:-2px">📄 NFS-e Serviço</button>
+      <button id="nfpTab-nfe" onclick="nfpTab('nfe')" style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.4rem 1rem;border:none;background:none;cursor:pointer;color:#999;border-bottom:2px solid transparent;margin-bottom:-2px">🧾 NF-e Peças</button>
+    </div>
+
+    <!-- NFS-e TAB -->
+    <div id="nfpBody-nfse">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:.2rem">Cliente</div>
+          <div style="font-weight:600;font-size:.9rem" id="nfpCliente">—</div>
+          <div style="font-size:.75rem;color:#888" id="nfpClienteDoc">—</div>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:.2rem">Serviço</div>
+          <div style="font-weight:600;font-size:.85rem" id="nfpServico">Manutenção de refrigeração</div>
+        </div>
+      </div>
+
+      <div style="background:#f8f9fa;border-radius:6px;padding:.75rem;margin-bottom:.8rem">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:.5rem">Itens do Serviço</div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+          <span style="flex:1;font-size:.85rem">Mão de obra — <span id="nfpMoDesc">serviço de manutenção</span></span>
+          <span style="font-size:.8rem;color:#666">R$</span>
+          <input type="text" id="nfpMoValor" placeholder="0,00" oninput="nfpCalc()"
+            style="width:90px;border:1px solid #ddd;border-radius:4px;padding:.3rem .5rem;font-size:.88rem;text-align:right;background:#fff;color:#111">
+        </div>
+        <div id="nfpExtras"><!-- itens adicionais --></div>
+        <button onclick="nfpAddItem()" style="background:none;border:1px dashed #ccc;border-radius:4px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer;color:#888;width:100%;margin-top:.3rem">+ Adicionar item de serviço</button>
+      </div>
+
+      <!-- Dados fiscais NFS-e -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.8rem">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;text-transform:uppercase;color:#aaa;margin-bottom:.2rem">Cód. Serviço</div>
+          <input type="text" id="nfpCodServ" value="14.01" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:.3rem .5rem;font-size:.82rem;background:#fff;color:#111">
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;text-transform:uppercase;color:#aaa;margin-bottom:.2rem">ISS %</div>
+          <input type="text" id="nfpIss" value="2.0" oninput="nfpCalc()" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:.3rem .5rem;font-size:.82rem;background:#fff;color:#111">
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;text-transform:uppercase;color:#aaa;margin-bottom:.2rem">ISS Retido?</div>
+          <select id="nfpIssRet" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:.3rem .5rem;font-size:.82rem;background:#fff;color:#111">
+            <option value="false">Não retido</option>
+            <option value="true">Retido na fonte</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background:#f0f9f4;border:1px solid #c3e6cb;border-radius:6px;padding:.7rem;margin-bottom:.8rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.25rem"><span style="font-size:.82rem;color:#666">Subtotal serviços</span><span style="font-weight:600" id="nfpSubMo">R$ 0,00</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.25rem"><span style="font-size:.82rem;color:#666">ISS (<span id="nfpIssPerc">2.0</span>%)</span><span style="font-weight:600;color:#c0392b" id="nfpIssVal">R$ 0,00</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #a8d5b5;padding-top:.3rem;margin-top:.15rem">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;color:#1a7a3c">TOTAL</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:900;color:#1a7a3c" id="nfpTotalMo">R$ 0,00</span>
+        </div>
+      </div>
+
+      <div class="fd"><label style="color:#555">Discriminação do serviço</label>
+        <textarea id="nfpDisc" style="min-height:60px;background:#fff;color:#111;border:1px solid #ddd;border-radius:6px;padding:.5rem;font-size:.82rem;width:100%;resize:vertical"></textarea>
+      </div>
+
+      <button class="pbtn" id="nfpBtnNfse" onclick="emitirNFSePainel()" style="margin-top:.5rem">📄 Emitir NFS-e</button>
+    </div>
+
+    <!-- NF-e TAB -->
+    <div id="nfpBody-nfe" style="display:none">
+      <div style="background:#f8f9fa;border-radius:6px;padding:.75rem;margin-bottom:.8rem">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:.5rem">Peças Autorizadas e Substituídas</div>
+        <div id="nfpPecasTable"></div>
+      </div>
+
+      <!-- Totais NF-e -->
+      <div style="background:#fff8f0;border:1px solid #f5d69a;border-radius:6px;padding:.7rem;margin-bottom:.8rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.25rem"><span style="font-size:.82rem;color:#666">Total produtos</span><span style="font-weight:600" id="nfpTotProd">R$ 0,00</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #f5d69a;padding-top:.3rem;margin-top:.15rem">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;color:#8c5500">TOTAL NF-e</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:900;color:#8c5500" id="nfpTotalNfe">R$ 0,00</span>
+        </div>
+      </div>
+
+      <!-- Dados fiscais NF-e por item -->
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:#888;margin-bottom:.5rem">
+        ℹ️ Verifique os dados fiscais de cada peça antes de emitir. NCM e CFOP são obrigatórios.
+      </div>
+      <div id="nfpPecasFiscal"></div>
+
+      <button class="pbtn" id="nfpBtnNfe" onclick="emitirNFePainel()" style="margin-top:.5rem;background:#e67e22">🧾 Emitir NF-e</button>
+    </div>
+
+    <!-- RESULTADO -->
+    <div id="nfpResult" style="display:none;margin-top:1rem">
+      <hr class="pmdv">
+      <div style="text-align:center;padding:.8rem 0">
+        <div style="font-size:2rem;margin-bottom:.3rem" id="nfpResIcon">✅</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:900;color:#1a7a3c" id="nfpResTitle">Nota emitida!</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:#888;margin-top:.2rem" id="nfpResInfo"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+        <a id="nfpPdfBtn" href="#" target="_blank" class="pbtn" style="text-decoration:none;flex:none;padding:.6rem 1.2rem">📄 Baixar PDF</a>
+        <a id="nfpXmlBtn" href="#" target="_blank" class="pbtn" style="text-decoration:none;flex:none;padding:.6rem 1.2rem;background:#555">📦 Baixar XML</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NF MODAL -->
+<div class="pmov" id="nfModal">
+  <div class="pmbox" style="max-width:500px">
+    <button class="pmcl" onclick="document.getElementById('nfModal').classList.remove('op')">✕</button>
+    <div id="nfContent">
+      <div style="text-align:center;padding:1.5rem 0">
+        <div style="font-size:2rem;margin-bottom:.5rem" id="nfIcon">📄</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:#111" id="nfTitle">Emitindo nota...</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:#888;margin-top:.3rem" id="nfStatus">Aguarde...</div>
+      </div>
+      <div id="nfResult" style="display:none">
+        <hr style="border:none;border-top:2px solid #0076aa;margin:.8rem 0">
+        <div id="nfInfo"></div>
+        <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+          <a id="nfPdfLink" href="#" target="_blank" class="pbtn" style="text-decoration:none;text-align:center;flex:1;padding:.6rem;font-size:.9rem">📄 Baixar DANFE/PDF</a>
+          <a id="nfXmlLink" href="#" target="_blank" class="pbtn" style="text-decoration:none;text-align:center;flex:1;padding:.6rem;font-size:.9rem;background:#555">📦 Baixar XML</a>
+        </div>
+      </div>
+      <div id="nfError" style="display:none;background:#fff5f5;border:1px solid #ffcccc;border-radius:6px;padding:.75rem;margin-top:.8rem">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;color:#b22222;margin-bottom:.3rem">❌ Erro na emissão</div>
+        <div style="font-size:.8rem;color:#666" id="nfErrorMsg"></div>
+        <div style="font-size:.75rem;color:#aaa;margin-top:.4rem">Verifique os dados e tente novamente. No Sandbox, certifique-se que a empresa está cadastrada.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lbov" id="lbov" onclick="this.classList.remove('op')">
+  <button class="lbcl">✕</button>
+  <img class="lbimg" id="lbimg" src="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore,collection,addDoc,doc,updateDoc,deleteDoc,getDoc,setDoc,query,orderBy,onSnapshot,serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage,ref,uploadString,getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const CLA=['Correia do compressor','Sistema elétrico','Visor de líquido','Compressor','Ventiladores'];
+const CLD=['Nível de gás','Nível de óleo de motor','Nível de água','Nível de óleo do compressor','Correias','Filtros','Rolamentos','Possíveis vazamentos de óleo'];
+
+let db,auth,storage,ordens=[],clientes=[],funcionarios=[],estoque=[],vendas=[],currentOS=null,currentUser=null,userRole=null,eTypeV='acoplado',selBrandV=null,selTypeV=null,osFilter='todos',estFilter='todos',newPhotos=[];
+
+function ss(t,m){const b=document.getElementById('sb');b.className='show '+t;b.textContent=m;if(t==='ok')setTimeout(()=>b.classList.remove('show'),3000);}
+
+try{
+  const app=initializeApp(FIREBASE_CONFIG);
+  db=getFirestore(app); storage=getStorage(app); auth=getAuth(app);
+
+  onAuthStateChanged(auth, async user=>{
+    if(!user){
+      // not logged in — show login screen
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('appWrap').style.display='none';
+      return;
+    }
+    // logged in — fetch role from Firestore
+    const uSnap=await getDoc(doc(db,'usuarios',user.uid));
+    if(!uSnap.exists()){
+      // user doc not set up yet — sign out
+      await signOut(auth);
+      showLoginMsg('Usuário não autorizado. Contate o administrador.','err');
+      return;
+    }
+    currentUser=user;
+    userRole=uSnap.data().role||'tecnico';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('appWrap').style.display='block';
+    document.getElementById('userBadge').textContent=(uSnap.data().nome||user.email)+' · '+roleLabel(userRole);
+    document.getElementById('userBadge').style.display='flex';
+    applyPermissions();
+    ss('ok','● Conectado ao Firebase ✓');
+
+    onSnapshot(query(collection(db,'ordens'),orderBy('timestamp','desc')),snap=>{
+      ordens=snap.docs.map(d=>({id:d.id,...d.data()}));
+      document.getElementById('sc').textContent='OS: '+ordens.length;
+      renderOS();
+      if(currentOS){const u=ordens.find(o=>o.id===currentOS.id);if(u)currentOS=u;}
+    });
+    onSnapshot(query(collection(db,'clientes'),orderBy('nome')),snap=>{
+      clientes=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderClientes();
+    });
+    onSnapshot(query(collection(db,'funcionarios'),orderBy('nome')),snap=>{
+      funcionarios=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderFunc();
+    });
+    onSnapshot(query(collection(db,'estoque'),orderBy('nome')),snap=>{
+      estoque=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderEstoque();
+    });
+    onSnapshot(query(collection(db,'vendas'),orderBy('timestamp','desc')),snap=>{
+      vendas=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderVendas();
+    });
+  });
+}catch(e){ss('err','Erro: '+e.message);}
+
+function roleLabel(r){return r==='admin'?'👑 Admin':r==='supervisor'?'🔑 Supervisor':'🔧 Técnico';}
+
+function canDo(action){
+  if(userRole==='admin')return true;
+  if(userRole==='supervisor'){
+    const supBlock=['manageUsers','deleteOS','decreaseStock'];
+    if(supBlock.includes(action))return false;
+    return true;
+  }
+  // técnico: pode adicionar peças, fotos, checklist e marcar como substituída
+  // NÃO pode: autorizar, editar OS, excluir, ver preços, gerenciar usuários
+  const tecAllow=['addPhotos','checklist','confirmPart','addPart'];
+  return tecAllow.includes(action);
+}
+
+function applyPermissions(){
+  const isAdmin=userRole==='admin';
+  const isSup=userRole==='supervisor';
+  const isTec=userRole==='tecnico';
+
+  // Aba usuários e vendas: só admin
+  document.getElementById('nt-users').style.display=isAdmin?'flex':'none';
+  document.getElementById('nt-vendas').style.display=isAdmin?'flex':'none';
+  // Abas que técnico NÃO vê: Clientes, Funcionários, Estoque, Nova OS
+  ['nt-cli','nt-func','nt-est','nt-new'].forEach(id=>{
+    document.getElementById(id).style.display=isTec?'none':'flex';
+  });
+  // Campos de preço no form de estoque: esconder para técnico
+  ['estCustoField','estVendaField'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display=isTec?'none':'';
+  });
+  // Redireciona técnico para OS se tentou acessar página proibida
+  if(isTec) goPage('os');
+}
+
+window.logout=async()=>{
+  if(!confirm('Sair da conta?'))return;
+  await signOut(auth);
+};
+
+// LOGIN / REGISTER
+window.doLogin=async()=>{
+  const email=document.getElementById('lEmail').value.trim();
+  const pass=document.getElementById('lPass').value;
+  if(!email||!pass){showLoginMsg('Preencha email e senha','err');return;}
+  const btn=document.getElementById('lBtn');btn.disabled=true;btn.textContent='Entrando...';
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    showLoginMsg(e.code==='auth/invalid-credential'?'Email ou senha incorretos':e.message,'err');
+  }
+  btn.disabled=false;btn.textContent='Entrar';
+};
+function showLoginMsg(msg,type){
+  const el=document.getElementById('lMsg');
+  el.textContent=msg;
+  el.style.color=type==='err'?'#ff4444':'#22d45e';
+  el.style.display='block';
+}
+// allow enter key on login
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('loginScreen').style.display!=='none')doLogin();
+});
+
+window.goPage=p=>{
+  document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.nt').forEach(x=>x.classList.remove('on'));
+  document.getElementById('pg-'+p)?.classList.add('on');
+  document.getElementById('nt-'+p)?.classList.add('on');
+};
+
+// MODELOS POR MARCA
+const MODELOS = {
+  'Thermo King': {
+    diesel: ['SB III','SB 190','SB 200','SB 210','SB 230','SB 300','SB 310','SB 330','SLX','Super 2','Super 2 190','A-500','MD-200','MD-300','KD II','BKD','T-600','T-680','T-800','T-880','T-1000','T-1080','T-1200'],
+    acoplado: ['V-300','V-500']
+  },
+  'Carrier': {
+    diesel: ['Extra XT','Ultra XT','X1800','X2100','X2500','X7300','X7500','Supra 550','Supra 650','Supra 750','Supra 850','Supra 950'],
+    acoplado: ['Xarios','Citimax']
+  }
+};
+
+window.selBrand=(el,b)=>{
+  selBrandV=b;
+  document.querySelectorAll('.bb').forEach(x=>x.classList.remove('sl'));
+  el.classList.add('sl');
+  renderModeloField(b);
+};
+
+function renderModeloField(marca){
+  const wrap=document.getElementById('modeloWrap');
+  if(!wrap)return;
+  const modelos=MODELOS[marca];
+  if(modelos){
+    // marca com modelos cadastrados — mostra select agrupado
+    let opts='<option value="">Selecione o modelo...</option>';
+    opts+=`<optgroup label="🔧 Diesel">${modelos.diesel.map(m=>`<option value="${m}|diesel">${m}</option>`).join('')}</optgroup>`;
+    opts+=`<optgroup label="⚡ Acoplado">${modelos.acoplado.map(m=>`<option value="${m}|acoplado">${m}</option>`).join('')}</optgroup>`;
+    opts+='<optgroup label="✏️ Outro"><option value="outro|">Digitar manualmente...</option></optgroup>';
+    wrap.innerHTML=`
+      <select id="nModeloSel" onchange="onModeloChange(this.value)" style="width:100%">
+        ${opts}
+      </select>
+      <div id="nModeloManual" style="display:none;margin-top:.4rem">
+        <input type="text" id="nModelo" placeholder="Digite o modelo...">
+      </div>`;
+  } else {
+    // marca sem modelos cadastrados — campo livre + tipo manual
+    wrap.innerHTML=`<input type="text" id="nModelo" placeholder="Digite o modelo do equipamento...">`;
+  }
+}
+
+window.onModeloChange=val=>{
+  const [modelo,tipo]=val.split('|');
+  const manualDiv=document.getElementById('nModeloManual');
+  if(modelo==='outro'){
+    if(manualDiv)manualDiv.style.display='block';
+    // mantém tipo atual
+  } else {
+    if(manualDiv)manualDiv.style.display='none';
+    if(tipo) selType(tipo); // auto-detecta diesel/acoplado
+  }
+};
+
+function getModeloValue(){
+  const sel=document.getElementById('nModeloSel');
+  if(sel){
+    const [modelo,tipo]=sel.value.split('|');
+    if(modelo==='outro'){
+      return document.getElementById('nModelo')?.value.trim()||'';
+    }
+    return modelo||'';
+  }
+  return document.getElementById('nModelo')?.value.trim()||'';
+}
+
+window.selType=t=>{selTypeV=t;document.getElementById('nBtnAc').className='tb'+(t==='acoplado'?' sa':'');document.getElementById('nBtnDi').className='tb'+(t==='diesel'?' sd':'');};
+
+window.addPhotos=async inp=>{
+  const files=[...inp.files];inp.value='';
+  for(const f of files){
+    const raw=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});
+    const resized=await resizeImage(raw,1024);
+    newPhotos.push(resized);rnp();
+  }
+};
+function rnp(){document.getElementById('nPhG').innerHTML=newPhotos.map((u,i)=>`<div class="pthumb"><img src="${u}"><button class="pdel" onclick="rmNP(${i})">✕</button></div>`).join('');}
+window.rmNP=i=>{newPhotos.splice(i,1);rnp();};
+
+async function uploadPhotos(photos,osId){
+  if(!photos.length)return[];
+  const urls=[];
+  for(let i=0;i<photos.length;i++){
+    const b64=photos[i].split(',')[1];const ext=photos[i].match(/data:image\/(\w+)/)?.[1]||'jpg';
+    const r=ref(storage,`os/${osId}/f_${Date.now()}_${i}.${ext}`);
+    await uploadString(r,b64,'base64',{contentType:`image/${ext}`});
+    urls.push(await getDownloadURL(r));
+  }
+  return urls;
+}
+
+window.registrarOS=async()=>{
+  const placa=document.getElementById('nPlaca').value.trim(),tec=document.getElementById('nTec').value.trim(),cli=document.getElementById('nCli').value.trim(),def=document.getElementById('nDef').value.trim();
+  if(!placa){toast('Informe a placa',1);return;}if(!tec){toast('Informe o técnico',1);return;}
+  if(!cli){toast('Informe o cliente',1);return;}if(!selBrandV){toast('Selecione a marca',1);return;}
+  if(!selTypeV){toast('Selecione o tipo',1);return;}if(!def){toast('Descreva o defeito',1);return;}
+  const btn=document.getElementById('nBtn');btn.disabled=true;btn.textContent='Salvando...';
+  const now=new Date(),num=ordens.length?Math.max(...ordens.map(o=>o.num||0))+1:1;
+  try{
+    const ref2=await addDoc(collection(db,'ordens'),{num,placa,tecnico:tec,cliente:cli,marca:selBrandV,modelo:getModeloValue(),tipo:selTypeV,defeito:def,status:'aberto',fotos:[],checklist:[],pecas:[],data:now.toLocaleDateString('pt-BR'),hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),timestamp:serverTimestamp()});
+    if(newPhotos.length){const urls=await uploadPhotos(newPhotos,ref2.id);await updateDoc(doc(db,'ordens',ref2.id),{fotos:urls});}
+    ['nPlaca','nTec','nCli','nDef'].forEach(id=>document.getElementById(id).value='');
+    document.querySelectorAll('.bb').forEach(x=>x.classList.remove('sl'));
+    document.getElementById('nBtnAc').className='tb';document.getElementById('nBtnDi').className='tb';
+    // reset modelo
+    const wrap=document.getElementById('modeloWrap');
+    if(wrap)wrap.innerHTML=`<input type="text" id="nModelo" placeholder="Selecione uma marca primeiro..." disabled style="opacity:.5">`;
+    selBrandV=null;selTypeV=null;newPhotos=[];rnp();
+    toast('OS #'+String(num).padStart(4,'0')+' registrada ✓');goPage('os');
+  }catch(e){toast(e.message,1);}
+  btn.disabled=false;btn.textContent='⊕ Registrar Ordem de Serviço';
+};
+
+window.setF=f=>{osFilter=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));document.getElementById('cf-'+f).classList.add('on');renderOS();};
+window.renderOS=()=>{
+  const q=document.getElementById('osQ').value.toLowerCase(),list=document.getElementById('osLst');
+  const data=ordens.filter(o=>{const mf=osFilter==='todos'||o.status===osFilter||o.tipo===osFilter;const ms=!q||(o.placa||'').toLowerCase().includes(q)||(o.cliente||'').toLowerCase().includes(q)||(o.tecnico||'').toLowerCase().includes(q)||(o.marca||'').toLowerCase().includes(q);return mf&&ms;});
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="empty-ico">❄️</div><div class="empty-txt">${ordens.length?'Sem resultados':'Nenhuma OS ainda'}</div></div>`;return;}
+  list.innerHTML=data.map(os=>`<div class="osc" onclick="openDetail('${os.id}')">
+    <div class="onum">OS #${String(os.num||'?').padStart(4,'0')} · ${os.data||''} ${os.hora||''}</div>
+    <div class="opl">🚛 ${os.placa||'—'}<span class="bdg bdg-${os.tipo==='diesel'?'di':'ac'}">${os.tipo||'—'}</span><span class="bdg bdg-${os.status==='concluido'?'co':'ab'}">${os.status==='concluido'?'Concluído':'Aberto'}</span>${(os.pecas||[]).length?`<span class="bdg" style="background:rgba(255,153,0,.1);color:var(--warn);border:1px solid rgba(255,153,0,.2)">🔩${os.pecas.length}</span>`:''}</div>
+    <div class="ometa"><div class="omi"><span class="k">Cliente</span><span class="v">${os.cliente||'—'}</span></div><div class="omi"><span class="k">Técnico</span><span class="v">${os.tecnico||'—'}</span></div><div class="omi"><span class="k">Marca</span><span class="v">${os.marca||'—'}${os.modelo?` · ${os.modelo}`:''}</span></div></div>
+    <div class="odef">${os.defeito||'—'}</div>
+  </div>`).join('');
+};
+
+window.openDetail=id=>{
+  const os=ordens.find(x=>x.id===id);if(!os)return;currentOS=os;
+  document.getElementById('dpN').textContent=`OS #${String(os.num||'?').padStart(4,'0')} · ${os.data||''} ${os.hora||''}`;
+  document.getElementById('dpP').textContent='🚛 '+os.placa;
+  document.getElementById('dpB').innerHTML=`<span class="bdg bdg-${os.tipo==='diesel'?'di':'ac'}">${os.tipo||'—'}</span><span class="bdg bdg-${os.status==='concluido'?'co':'ab'}">${os.status==='concluido'?'Concluído':'Aberto'}</span>`;
+  document.getElementById('dpM').innerHTML=`<div class="omi"><span class="k">Cliente</span><span class="v">${os.cliente||'—'}</span></div><div class="omi"><span class="k">Técnico</span><span class="v">${os.tecnico||'—'}</span></div><div class="omi"><span class="k">Marca</span><span class="v">${os.marca||'—'}</span></div>${os.modelo?`<div class="omi"><span class="k">Modelo</span><span class="v">${os.modelo}</span></div>`:''}<div class="omi"><span class="k">Tipo</span><span class="v">${os.tipo==='acoplado'?'⚡ Acoplado':'🔧 Diesel'}</span></div>`;
+  document.getElementById('dpDf').textContent=os.defeito||'—';
+  document.getElementById('dpBtS').textContent=os.status==='concluido'?'↩ Reabrir':'✓ Concluir';
+  renderCL(os);renderParts(os);renderDPh(os);
+  document.getElementById('ePlaca').value=os.placa||'';document.getElementById('eTec').value=os.tecnico||'';
+  document.getElementById('eCli').value=os.cliente||'';document.getElementById('eMarca').value=os.marca||'Carrier';
+  document.getElementById('eDef').value=os.defeito||'';
+  renderEditModelo(os.marca||'Carrier',os.modelo||'');
+  eTypeV=os.tipo||'acoplado';
+  document.getElementById('eBtnAc').className='tb'+(eTypeV==='acoplado'?' sa':'');
+  document.getElementById('eBtnDi').className='tb'+(eTypeV==='diesel'?' sd':'');
+  dpTab('info');
+  document.getElementById('detP').classList.add('op');
+  // mostra botão orçamento só para admin/supervisor
+  document.getElementById('btnOrcamento').style.display=canDo('viewPrices')?'':'none';
+  document.getElementById('btnNFSe').style.display=canDo('viewPrices')?'':'none';
+  document.getElementById('btnNFe').style.display=canDo('viewPrices')?'':'none';
+  // mostra notas já emitidas desta OS
+  renderNotasEmitidas(os);
+  // técnico não vê aba editar nem botão excluir/concluir
+  const isTec=userRole==='tecnico';
+  document.getElementById('dt-editar').style.display=isTec?'none':'flex';
+  document.getElementById('dpBtS').style.display=isTec?'none':'';
+  document.querySelector('#dtb-info .btn-sm.br').style.display=canDo('deleteOS')?'':'none';
+};
+window.closeDetail=()=>{document.getElementById('detP').classList.remove('op');currentOS=null;};
+
+window.dpTab=t=>{['info','check','pecas','fotos','editar'].forEach(x=>{document.getElementById('dtb-'+x).style.display=t===x?'block':'none';document.getElementById('dt-'+x).classList.toggle('on',t===x);});};
+
+// CHECKLIST
+function renderCL(os){
+  const base=os.tipo==='acoplado'?CLA:CLD;
+  const saved=os.checklist||[];
+  document.getElementById('clLst').innerHTML=base.map((item,i)=>{const st=saved[i]?.status||'';return`<div class="cl-item"><span class="cl-lbl">${item}</span><div class="cl-btns"><button class="clb ok ${st==='ok'?'on':''}" onclick="clT(this,'ok')">OK</button><button class="clb nok ${st==='nok'?'on':''}" onclick="clT(this,'nok')">NOK</button><button class="clb na ${st==='na'?'on':''}" onclick="clT(this,'na')">N/A</button></div></div>`;}).join('');
+}
+window.clT=(btn,t)=>{btn.closest('.cl-btns').querySelectorAll('.clb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');};
+window.saveCL=async()=>{
+  const base=currentOS.tipo==='acoplado'?CLA:CLD;
+  const cl=base.map((item,i)=>{let st='';document.querySelectorAll('#clLst .cl-item')[i]?.querySelectorAll('.clb').forEach(b=>{if(b.classList.contains('on'))st=b.classList[1];});return{item,status:st};});
+  try{await updateDoc(doc(db,'ordens',currentOS.id),{checklist:cl});currentOS.checklist=cl;toast('Checklist salvo ✓');}catch(e){toast(e.message,1);}
+};
+
+// PARTS
+function renderParts(os){
+  const p=os.pecas||[];
+  const isTec=userRole==='tecnico';
+  const canAuth=canDo('authorizeparts');   // admin/supervisor autorizam
+  const canAdd=canDo('addPart');           // todos podem adicionar peças
+  const canRemove=!isTec;                  // só admin/supervisor removem
+
+  // mostra sempre o form de adicionar
+  const addBlock=document.getElementById('partAddBlock');
+  if(addBlock) addBlock.style.display='block';
+
+  // técnico não vê opção de autorizar no select ao adicionar
+  const pAuth=document.getElementById('pAuth');
+  if(pAuth){
+    if(isTec){
+      pAuth.style.display='none'; // técnico não escolhe autorização, vai como pendente
+    } else {
+      pAuth.style.display='';
+    }
+  }
+
+  if(!p.length){
+    document.getElementById('prtLst').innerHTML='<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.8rem">Nenhuma peça adicionada</div>';
+    return;
+  }
+
+  document.getElementById('prtLst').innerHTML=p.map((x,i)=>{
+    const a=x.auth||'pendente';
+    const isAut=a==='autorizado';
+    const isNAut=a==='nao_autorizado';
+
+    // botões de autorização: admin/supervisor editam, técnico só vê badge
+    const authDisplay=canAuth
+      ?`<div class="part-auth-row">
+          <button class="pab pend ${a==='pendente'?'on':''}" onclick="setAuth(${i},'pendente')">⏳ Pendente</button>
+          <button class="pab aut  ${isAut?'on':''}"          onclick="setAuth(${i},'autorizado')">✅ Autorizado</button>
+          <button class="pab naut ${isNAut?'on':''}"         onclick="setAuth(${i},'nao_autorizado')">❌ Não Aut.</button>
+        </div>`
+      :`<div style="margin-top:.28rem">
+          <span style="font-family:var(--fh);font-size:.75rem;font-weight:700;padding:.22rem .65rem;border-radius:4px;
+            ${isAut?'background:rgba(34,212,94,.15);color:var(--ok);border:1px solid rgba(34,212,94,.3)':
+              isNAut?'background:rgba(255,68,68,.13);color:var(--nok);border:1px solid rgba(255,68,68,.28)':
+              'background:rgba(255,153,0,.12);color:var(--warn);border:1px solid rgba(255,153,0,.28)'}">
+            ${isAut?'✅ Autorizado — marque ✓ quando trocar':isNAut?'❌ Não Autorizado — não substituir':'⏳ Aguardando autorização'}
+          </span>
+        </div>`;
+
+    // checkbox de substituição: técnico só marca autorizadas
+    const canTick=isAut||(canAuth); // autorizado por qualquer um, ou admin/sup marca qualquer
+    const tickStyle=canTick?'cursor:pointer':'opacity:.3;cursor:not-allowed';
+    const tickTitle=!canTick?'Aguardando autorização para marcar':x.done?'Desmarcar substituição':'Confirmar substituição';
+    const tickFn=canTick?`tPart(${i})`:'';
+
+    return `<div class="part-item">
+      <div class="part-top">
+        <div class="${x.done?'pck done':'pck'}" onclick="${tickFn}" title="${tickTitle}" style="${tickStyle}">${x.done?'✓':''}</div>
+        <span class="pn ${x.done?'done':''}">${x.name}${x.done?` <span style="font-family:var(--fm);font-size:.6rem;color:var(--ok)">· substituída</span>`:''}
+        </span>
+        ${x.qty?`<span class="pqt">× ${x.qty}</span>`:''}
+        ${canDo('viewPrices')&&x.venda?`<span class="pqt" style="color:var(--ok)">R$ ${x.venda}</span>`:''}
+        ${canRemove?`<button class="pbx" onclick="rmPart(${i})" title="Remover">✕</button>`:''}
+      </div>
+      ${authDisplay}
+    </div>`;
+  }).join('');
+}
+window.addPart=async()=>{
+  const name=document.getElementById('pNome').value.trim();
+  if(!name){toast('Informe a peça',1);return;}
+  // técnico adiciona sempre como pendente (sem escolher autorização)
+  const auth=userRole==='tecnico'?'pendente':(document.getElementById('pAuth')?.value||'pendente');
+  const novaPeca={name,qty:document.getElementById('pQty').value.trim(),auth,done:false};
+  if(_pecaSel){novaPeca.cod=_pecaSel.cod||'';novaPeca.custo=_pecaSel.custo||'';novaPeca.venda=_pecaSel.venda||'';novaPeca.estId=_pecaSel.id||'';}
+  const pecas=[...(currentOS.pecas||[]),novaPeca];
+  try{
+    await updateDoc(doc(db,'ordens',currentOS.id),{pecas});
+    currentOS.pecas=pecas;
+    document.getElementById('pNome').value='';
+    document.getElementById('pQty').value='';
+    const pa=document.getElementById('pAuth');if(pa)pa.value='pendente';
+    document.getElementById('pPreview').textContent='';
+    _pecaSel=null;
+    renderParts(currentOS);
+    toast(userRole==='tecnico'?'Peça adicionada — aguardando autorização':'Peça adicionada ✓');
+  }catch(e){toast(e.message,1);}
+};
+window.tPart=async i=>{
+  const pecas=[...(currentOS.pecas||[])];
+  const p=pecas[i];
+  // técnico só marca peças autorizadas
+  if(userRole==='tecnico'&&(p.auth||'pendente')!=='autorizado'){
+    toast('⛔ Só é possível confirmar peças autorizadas pelo supervisor',1);return;
+  }
+  p.done=!p.done;
+  try{
+    await updateDoc(doc(db,'ordens',currentOS.id),{pecas});
+    currentOS.pecas=pecas;renderParts(currentOS);
+    toast(p.done?'✅ Peça marcada como substituída!':'↩ Desmarcada');
+  }catch(e){toast(e.message,1);}
+};
+window.rmPart=async i=>{if(!confirm('Remover?'))return;const pecas=(currentOS.pecas||[]).filter((_,j)=>j!==i);try{await updateDoc(doc(db,'ordens',currentOS.id),{pecas});currentOS.pecas=pecas;renderParts(currentOS);toast('Removido');}catch(e){toast(e.message,1);}};
+window.setAuth=async(i,auth_val)=>{
+  if(!canDo('authorizeparts')){toast('❌ Sem permissão para autorizar peças',1);return;}
+  const pecas=[...(currentOS.pecas||[])];pecas[i].auth=auth_val;
+  try{await updateDoc(doc(db,'ordens',currentOS.id),{pecas});currentOS.pecas=pecas;renderParts(currentOS);toast(auth_val==='autorizado'?'✅ Autorizado!':auth_val==='nao_autorizado'?'❌ Não autorizado':'⏳ Pendente');}
+  catch(e){toast(e.message,1);}
+};
+
+// PHOTOS IN DETAIL
+function renderDPh(os){
+  const fotos=os.fotos||[];
+  window._fotos=fotos;
+  document.getElementById('dpPhG').innerHTML=fotos.length
+    ?fotos.map((u,i)=>`<div class="dpth" onclick="openLB(${i})"><img src="${u}" loading="lazy"></div>`).join('')
+    :'<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:.8rem">Nenhuma foto</div>';
+}
+
+async function resizeImage(b64,maxW=800){
+  return new Promise(res=>{
+    const img=new Image();img.onload=()=>{
+      const ratio=Math.min(1,maxW/img.width);
+      const c=document.createElement('canvas');c.width=Math.round(img.width*ratio);c.height=Math.round(img.height*ratio);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',0.7));
+    };img.src=b64;
+  });
+}
+
+window.addDetailPhotos=async inp=>{
+  const files=[...inp.files];inp.value='';
+  if(!files.length)return;
+  toast('Processando fotos...');
+  const small=await Promise.all(files.map(async f=>{
+    const raw=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});
+    return resizeImage(raw,900);
+  }));
+  const fotos=[...(currentOS.fotos||[]),...small];
+  try{
+    await updateDoc(doc(db,'ordens',currentOS.id),{fotos});
+    currentOS.fotos=fotos;renderDPh(currentOS);toast('✓ Fotos salvas!');
+  }catch(e){toast('Erro: '+e.message,1);}
+};
+window.openLB=i=>{
+  const u=typeof i==='number'?(window._fotos||[])[i]:i;
+  if(u){document.getElementById('lbimg').src=u;document.getElementById('lbov').classList.add('op');}
+};
+
+// STATUS / DELETE
+window.toggleStatus=async()=>{
+  const isConcluding=currentOS.status!=='concluido';
+  if(!canDo('concludeOS')){toast('⛔ Sem permissão para concluir OS',1);return;}
+
+  if(isConcluding){
+    // Dar baixa no estoque para peças autorizadas E substituídas
+    const pecasBaixar=(currentOS.pecas||[]).filter(p=>p.auth==='autorizado'&&p.done&&p.estId);
+    if(pecasBaixar.length){
+      const confirmar=confirm(`Concluir OS?\n\nIsso irá dar baixa no estoque de ${pecasBaixar.length} peça(s) substituída(s) e autorizada(s).`);
+      if(!confirmar)return;
+      for(const p of pecasBaixar){
+        const estItem=estoque.find(e=>e.id===p.estId);
+        if(estItem){
+          const qtdUsada=parseInt(p.qty)||1;
+          const novaQty=Math.max(0,(estItem.qty||0)-qtdUsada);
+          try{await updateDoc(doc(db,'estoque',p.estId),{qty:novaQty});}catch(e){console.warn('Erro ao baixar estoque:',e);}
+        }
+      }
+      toast(`✅ OS concluída! Baixa de ${pecasBaixar.length} peça(s) no estoque`);
+    } else {
+      if(!confirm('Concluir esta OS?'))return;
+      toast('✅ OS concluída!');
+    }
+  } else {
+    if(!confirm('Reabrir esta OS?'))return;
+    toast('↩ OS reaberta');
+  }
+
+  const s=isConcluding?'concluido':'aberto';
+  try{await updateDoc(doc(db,'ordens',currentOS.id),{status:s});}catch(e){toast(e.message,1);}
+};
+window.deleteOS=async()=>{
+  if(!canDo('deleteOS')){toast('⛔ Apenas o administrador pode excluir OS',1);return;}
+  if(!confirm('Excluir esta OS permanentemente?'))return;
+  try{await deleteDoc(doc(db,'ordens',currentOS.id));closeDetail();toast('OS excluída');}catch(e){toast(e.message,1);}
+};
+
+// EDIT
+window.renderEditModelo=(marca,currentModelo='')=>{
+  const wrap=document.getElementById('eModeloWrap');
+  if(!wrap)return;
+  const modelos=MODELOS[marca];
+  if(modelos){
+    const all=[...modelos.diesel.map(m=>({m,t:'diesel'})),...modelos.acoplado.map(m=>({m,t:'acoplado'}))];
+    const found=all.find(x=>x.m===currentModelo);
+    let opts='<option value="|">Selecione o modelo...</option>';
+    opts+=`<optgroup label="🔧 Diesel">${modelos.diesel.map(m=>`<option value="${m}|diesel" ${m===currentModelo?'selected':''}>${m}</option>`).join('')}</optgroup>`;
+    opts+=`<optgroup label="⚡ Acoplado">${modelos.acoplado.map(m=>`<option value="${m}|acoplado" ${m===currentModelo?'selected':''}>${m}</option>`).join('')}</optgroup>`;
+    opts+=`<optgroup label="✏️ Outro"><option value="outro|" ${!found&&currentModelo?'selected':''}>Digitar manualmente...</option></optgroup>`;
+    wrap.innerHTML=`
+      <select id="eModeloSel" onchange="onEModeloChange(this.value)" style="width:100%">${opts}</select>
+      <div id="eModeloManual" style="${!found&&currentModelo?'display:block':'display:none'};margin-top:.4rem">
+        <input type="text" id="eModelo" value="${!found?currentModelo:''}" placeholder="Digite o modelo...">
+      </div>`;
+  } else {
+    wrap.innerHTML=`<input type="text" id="eModelo" value="${currentModelo}" placeholder="Modelo do equipamento...">`;
+  }
+};
+window.onEModeloChange=val=>{
+  const [modelo,tipo]=val.split('|');
+  const manualDiv=document.getElementById('eModeloManual');
+  if(modelo==='outro'){if(manualDiv)manualDiv.style.display='block';}
+  else{if(manualDiv)manualDiv.style.display='none';if(tipo)eSelType(tipo);}
+};
+function getEModeloValue(){
+  const sel=document.getElementById('eModeloSel');
+  if(sel){const[m]=sel.value.split('|');return m==='outro'?(document.getElementById('eModelo')?.value.trim()||''):m||'';}
+  return document.getElementById('eModelo')?.value.trim()||'';
+}
+window.eSelType=t=>{eTypeV=t;document.getElementById('eBtnAc').className='tb'+(t==='acoplado'?' sa':'');document.getElementById('eBtnDi').className='tb'+(t==='diesel'?' sd':'');};
+window.saveEdit=async()=>{
+  const d={placa:document.getElementById('ePlaca').value.trim(),tecnico:document.getElementById('eTec').value.trim(),cliente:document.getElementById('eCli').value.trim(),marca:document.getElementById('eMarca').value,modelo:getEModeloValue(),tipo:eTypeV,defeito:document.getElementById('eDef').value.trim()};
+  if(!d.placa||!d.cliente){toast('Preencha os campos',1);return;}
+  try{await updateDoc(doc(db,'ordens',currentOS.id),d);Object.assign(currentOS,d);openDetail(currentOS.id);toast('OS atualizada ✓');}catch(e){toast(e.message,1);}
+};
+
+// AUTOCOMPLETE FUNCIONÁRIOS (campo técnico)
+window.acFunc=(q,inpId,listId)=>{
+  const list=document.getElementById(listId);
+  if(!q||q.length<1){list.classList.remove('op');return;}
+  const m=funcionarios.filter(f=>
+    (f.status||'ativo')==='ativo' &&
+    (f.nome||'').toLowerCase().includes(q.toLowerCase())
+  ).slice(0,6);
+  if(!m.length){list.classList.remove('op');return;}
+  const cargos={tecnico:'Técnico',auxiliar:'Auxiliar',supervisor:'Supervisor',administrativo:'Administrativo',outro:'Outro'};
+  list.innerHTML=m.map(f=>`
+    <div class="aci" onclick="acSel('${f.nome.replace(/'/g,"\\'")}','${inpId}','${listId}')">
+      ${f.nome}
+      <div class="acs">${cargos[f.cargo]||f.cargo||''}</div>
+    </div>`).join('');
+  list.classList.add('op');
+};
+
+// AUTOCOMPLETE ESTOQUE (campo peças da OS)
+let _pecaSel=null;
+window.acEstoque=q=>{
+  const list=document.getElementById('aclEst');
+  const prev=document.getElementById('pPreview');
+  if(!list)return;
+  _pecaSel=null;
+  if(prev)prev.textContent='';
+  if(!q||q.length<1){list.classList.remove('op');return;}
+  const m=estoque.filter(p=>
+    (p.nome||'').toLowerCase().includes(q.toLowerCase())||
+    (p.cod||'').toLowerCase().includes(q.toLowerCase())
+  ).slice(0,8);
+  if(!m.length){list.classList.remove('op');return;}
+  // store matches globally for index access
+  window._estMatches=m;
+  const showPrice=canDo('viewPrices');
+  list.innerHTML=m.map((p,i)=>`
+    <div class="aci" onclick="selEstIdx(${i})">
+      <strong>${p.nome}</strong>${p.cod?` <span style="opacity:.5;font-size:.8em">[${p.cod}]</span>`:''}
+      <div class="acs">Estoque: ${p.qty||0}${showPrice&&p.venda?' · R$ '+p.venda:''} ${p.compat?'· '+p.compat:''}</div>
+    </div>`).join('');
+  list.classList.add('op');
+};
+window.selEstIdx=i=>{
+  const p=window._estMatches&&window._estMatches[i];
+  if(!p)return;
+  _pecaSel=p;
+  document.getElementById('pNome').value=p.nome;
+  document.getElementById('aclEst').classList.remove('op');
+  const prev=document.getElementById('pPreview');
+  if(prev){
+    const showPrice=canDo('viewPrices')&&p.venda;
+    prev.textContent=(p.qty||0)+' em estoque'+(showPrice?' · R$ '+p.venda:'');
+    prev.style.color='var(--ok)';
+  }
+};
+
+// AUTOCOMPLETE CLIENTES
+window.acSearch=(q,inpId,listId)=>{
+  const list=document.getElementById(listId);
+  if(!q||q.length<2){list.classList.remove('op');return;}
+  const m=clientes.filter(c=>c.nome.toLowerCase().includes(q.toLowerCase())).slice(0,5);
+  if(!m.length){list.classList.remove('op');return;}
+  list.innerHTML=m.map(c=>`<div class="aci" onclick="acSel('${c.nome.replace(/'/g,"\\'")}','${inpId}','${listId}')">${c.nome}<div class="acs">${c.tel||''}</div></div>`).join('');
+  list.classList.add('op');
+};
+window.acSel=(nome,inpId,listId)=>{document.getElementById(inpId).value=nome;document.getElementById(listId).classList.remove('op');};
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.acw')&&!e.target.closest('#aclEst')){
+    document.querySelectorAll('.acl').forEach(l=>l.classList.remove('op'));
+    const ae=document.getElementById('aclEst');
+    if(ae)ae.classList.remove('op');
+  }
+});
+
+// PRINT
+window.openPrint=()=>{
+  const os=currentOS;
+  document.getElementById('pm-on').textContent=`OS #${String(os.num||'?').padStart(4,'0')} — ColdLog`;
+  document.getElementById('pm-gd').innerHTML=`<div class="pmi"><span class="k">Placa</span><span class="v">${os.placa||'—'}</span></div><div class="pmi"><span class="k">Cliente</span><span class="v">${os.cliente||'—'}</span></div><div class="pmi"><span class="k">Marca</span><span class="v">${os.marca||'—'}</span></div>${os.modelo?`<div class="pmi"><span class="k">Modelo</span><span class="v">${os.modelo}</span></div>`:''}<div class="pmi"><span class="k">Tipo</span><span class="v">${os.tipo==='acoplado'?'⚡ Acoplado':'🔧 Diesel'}</span></div><div class="pmi"><span class="k">Técnico</span><span class="v">${os.tecnico||'—'}</span></div><div class="pmi"><span class="k">Data</span><span class="v">${os.data||''} ${os.hora||''}</span></div>`;
+  document.getElementById('pm-df').textContent=os.defeito||'—';
+  document.getElementById('pm-clt').textContent=`✔ Checklist — ${os.tipo==='acoplado'?'Acoplado':'Diesel'}`;
+  const base=os.tipo==='acoplado'?CLA:CLD;
+  const cl=os.checklist&&os.checklist.length?os.checklist:base.map(i=>({item:i,status:''}));
+  document.getElementById('pm-cl').innerHTML=cl.map((c,i)=>`<div class="pmclr"><span class="pmcll">${c.item}</span><div class="pmclbs"><button class="pmclb ok ${c.status==='ok'?'on':''}" onclick="pmT(this)">OK</button><button class="pmclb nok ${c.status==='nok'?'on':''}" onclick="pmT(this)">NOK</button><button class="pmclb na ${c.status==='na'?'on':''}" onclick="pmT(this)">N/A</button></div></div>`).join('');
+  const pecas=os.pecas||[];
+  if(pecas.length){
+    const showPrices=canDo('viewPrices');
+    document.getElementById('pm-p').innerHTML=pecas.map(p=>`
+      <div class="pmpr">
+        <div class="pmpck ${p.done?'dp':''}">${p.done?'✓':''}</div>
+        <span class="pmpn ${p.done?'stk':''}">${p.name}</span>
+        ${p.qty?`<span class="pmpq">×${p.qty}</span>`:''}
+        <span class="pmpa ${p.auth==='autorizado'?'aut':p.auth==='nao_autorizado'?'naut':'pend'}">${p.auth==='autorizado'?'Autorizado':p.auth==='nao_autorizado'?'Não Aut.':'Pendente'}</span>
+      </div>`).join('');
+    document.getElementById('pm-ps').style.display='block';
+  } else document.getElementById('pm-ps').style.display='none';
+  const fotos=os.fotos||[];
+  if(fotos.length){document.getElementById('pm-ph').innerHTML=fotos.map(u=>`<img src="${u}">`).join('');document.getElementById('pm-fs').style.display='block';}
+  else document.getElementById('pm-fs').style.display='none';
+  document.getElementById('pmov').classList.add('op');
+};
+window.pmT=btn=>{btn.closest('.pmclbs').querySelectorAll('.pmclb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');};
+
+// CLIENTES
+window.salvarCliente=async()=>{
+  const nome=document.getElementById('cNome').value.trim();if(!nome){toast('Informe o nome',1);return;}
+  try{
+    await addDoc(collection(db,'clientes'),{
+      nome,
+      tipo:document.getElementById('cTipo').value,
+      doc:document.getElementById('cDoc').value.trim(),
+      tel:document.getElementById('cTel').value.trim(),
+      email:document.getElementById('cEmail').value.trim(),
+      ie:document.getElementById('cIe').value.trim(),
+      cep:document.getElementById('cCep').value.trim(),
+      logradouro:document.getElementById('cLogradouro').value.trim(),
+      numero:document.getElementById('cNumero').value.trim(),
+      bairro:document.getElementById('cBairro').value.trim(),
+      compl:document.getElementById('cCompl').value.trim(),
+      municipio:document.getElementById('cMunicipio').value.trim(),
+      uf:document.getElementById('cUf').value.trim().toUpperCase(),
+      codIbge:document.getElementById('cCodIbge').value.trim(),
+      obs:document.getElementById('cObs').value.trim(),
+      timestamp:serverTimestamp()
+    });
+    ['cNome','cDoc','cTel','cEmail','cIe','cCep','cLogradouro','cNumero','cBairro','cCompl','cMunicipio','cUf','cCodIbge','cObs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    toast('Cliente salvo ✓');
+  }catch(e){toast(e.message,1);}
+};
+window.renderClientes=()=>{
+  const q=document.getElementById('cliQ').value.toLowerCase(),list=document.getElementById('cliLst');
+  const data=clientes.filter(c=>!q||(c.nome||'').toLowerCase().includes(q)||(c.tel||'').includes(q));
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="empty-ico">👤</div><div class="empty-txt">${clientes.length?'Sem resultados':'Nenhum cliente'}</div></div>`;return;}
+  list.innerHTML=data.map(c=>`<div class="clic" onclick="openCli('${c.id}')"><div class="clin">${c.nome}</div><div class="clim">${c.tel?`<div class="cii"><span class="k">Tel</span><span class="v">${c.tel}</span></div>`:''}<div class="cii"><span class="k">OS</span><span class="v">${ordens.filter(o=>o.cliente===c.nome).length}</span></div></div></div>`).join('');
+};
+window.openCli=id=>{
+  const c=clientes.find(x=>x.id===id);if(!c)return;
+  document.getElementById('cpName').textContent=c.nome;
+  document.getElementById('cpInfo').innerHTML=`<div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:.5rem">${c.tel?`<div class="cii"><span class="k">Tel</span><span class="v">${c.tel}</span></div>`:''} ${c.email?`<div class="cii"><span class="k">E-mail</span><span class="v">${c.email}</span></div>`:''} ${c.doc?`<div class="cii"><span class="k">Doc</span><span class="v">${c.doc}</span></div>`:''} ${c.obs?`<div class="cii" style="width:100%"><span class="k">Obs</span><span class="v">${c.obs}</span></div>`:''}</div>`;
+  const hist=ordens.filter(o=>o.cliente===c.nome);
+  document.getElementById('cpHist').innerHTML=hist.length?hist.map(o=>`<div class="hitem" onclick="openDetail('${o.id}');document.getElementById('cliP').classList.remove('op')"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.25rem;margin-bottom:.15rem"><span style="font-family:var(--fh);font-size:.88rem;font-weight:800">🚛 ${o.placa} <span class="bdg bdg-${o.tipo==='diesel'?'di':'ac'}">${o.tipo}</span></span><span style="font-family:var(--fm);font-size:.57rem;color:var(--muted)">${o.data} ${o.hora}</span></div><div style="font-size:.74rem;color:var(--muted)">🔧 ${o.tecnico||'—'} · ${o.defeito}</div></div>`).join(''):'<div style="color:var(--muted);font-size:.8rem">Nenhuma OS.</div>';
+  document.getElementById('cliP').classList.add('op');
+};
+document.getElementById('cliP').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('op');});
+
+// FUNCIONÁRIOS
+window.salvarFunc=async()=>{
+  const nome=document.getElementById('fNome').value.trim();
+  if(!nome){toast('Informe o nome',1);return;}
+  try{
+    await addDoc(collection(db,'funcionarios'),{
+      nome,
+      cargo:document.getElementById('fCargo').value,
+      tel:document.getElementById('fTel').value.trim(),
+      cpf:document.getElementById('fCpf').value.trim(),
+      admissao:document.getElementById('fAdmissao').value.trim(),
+      status:document.getElementById('fStatus').value,
+      obs:document.getElementById('fObs').value.trim(),
+      timestamp:serverTimestamp()
+    });
+    ['fNome','fTel','fCpf','fAdmissao','fObs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fCargo').value='tecnico';
+    document.getElementById('fStatus').value='ativo';
+    toast('Funcionário salvo ✓');
+  }catch(e){toast(e.message,1);}
+};
+window.renderFunc=()=>{
+  const q=document.getElementById('funcQ')?.value.toLowerCase()||'';
+  const list=document.getElementById('funcLst');
+  if(!list)return;
+  const data=funcionarios.filter(f=>!q||(f.nome||'').toLowerCase().includes(q)||(f.cargo||'').toLowerCase().includes(q));
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="empty-ico">👷</div><div class="empty-txt">${funcionarios.length?'Sem resultados':'Nenhum funcionário'}</div></div>`;return;}
+  const cargos={tecnico:'Técnico',auxiliar:'Auxiliar',supervisor:'Supervisor',administrativo:'Administrativo',outro:'Outro'};
+  list.innerHTML=data.map(f=>`
+    <div class="func-card">
+      <div class="func-avatar">${(f.nome||'?')[0].toUpperCase()}</div>
+      <div class="func-info">
+        <div class="func-name">${f.nome}</div>
+        <div class="func-meta">
+          <span class="func-badge fb-cargo">${cargos[f.cargo]||f.cargo}</span>
+          <span class="func-badge fb-${f.status||'ativo'}">${f.status==='ativo'?'✅ Ativo':f.status==='inativo'?'❌ Inativo':f.status==='ferias'?'🏖️ Férias':'⚠️ Afastado'}</span>
+          ${f.tel?`<span style="font-size:.75rem;color:var(--muted)">${f.tel}</span>`:''}
+        </div>
+        ${f.obs?`<div style="font-size:.72rem;color:var(--muted);margin-top:.22rem">${f.obs}</div>`:''}
+      </div>
+      <button class="func-del" onclick="delFunc('${f.id}')" title="Excluir">✕</button>
+    </div>`).join('');
+};
+window.delFunc=async id=>{
+  if(!confirm('Excluir funcionário?'))return;
+  try{await deleteDoc(doc(db,'funcionarios',id));toast('Removido');}catch(e){toast(e.message,1);}
+};
+
+// ESTOQUE
+window.salvarPeca=async()=>{
+  const nome=document.getElementById('eNome').value.trim();
+  if(!nome){toast('Informe o nome da peça',1);return;}
+  try{
+    await addDoc(collection(db,'estoque'),{
+      nome,
+      cod:document.getElementById('eCod').value.trim(),
+      qty:parseInt(document.getElementById('eQty').value)||0,
+      qtyMin:parseInt(document.getElementById('eQtyMin').value)||2,
+      custo:document.getElementById('eCusto').value.trim(),
+      venda:document.getElementById('eVenda').value.trim(),
+      compat:document.getElementById('eCompat').value.trim(),
+      loc:document.getElementById('eLoc').value.trim(),
+      // Dados fiscais
+      ncm:document.getElementById('eNcm').value.trim(),
+      cfop:document.getElementById('eCfop').value,
+      csosn:document.getElementById('eCsosn').value,
+      unidade:document.getElementById('eUnidade').value,
+      aliqPis:document.getElementById('eAliqPis').value.trim(),
+      aliqCofins:document.getElementById('eAliqCofins').value.trim(),
+      obs:document.getElementById('eObs').value.trim(),
+      timestamp:serverTimestamp()
+    });
+    ['eNome','eCod','eQty','eQtyMin','eCusto','eVenda','eCompat','eLoc','eNcm','eAliqPis','eAliqCofins','eObs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    toast('Peça cadastrada ✓');
+  }catch(e){toast(e.message,1);}
+};
+window.setEF=f=>{
+  estFilter=f;
+  document.querySelectorAll('[id^="ef-"]').forEach(c=>c.classList.remove('on'));
+  document.getElementById('ef-'+f).classList.add('on');
+  renderEstoque();
+};
+window.renderEstoque=()=>{
+  const q=document.getElementById('estQ')?.value.toLowerCase()||'';
+  const list=document.getElementById('estLst');
+  if(!list)return;
+  let data=estoque.filter(p=>{
+    const ms=!q||(p.nome||'').toLowerCase().includes(q)||(p.cod||'').toLowerCase().includes(q)||(p.compat||'').toLowerCase().includes(q);
+    const qty=p.qty||0,min=p.qtyMin||2;
+    const mf=estFilter==='todos'||(estFilter==='zero'&&qty===0)||(estFilter==='baixo'&&qty>0&&qty<=min)||(estFilter==='ok'&&qty>min);
+    return ms&&mf;
+  });
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="empty-ico">🔩</div><div class="empty-txt">${estoque.length?'Sem resultados':'Estoque vazio'}</div></div>`;return;}
+  list.innerHTML=data.map(p=>{
+    const qty=p.qty||0,min=p.qtyMin||2;
+    const nivel=qty===0?'zero':qty<=min?'baixo':'ok';
+    const nivelLabel=qty===0?'❌ Zerado':qty<=min?'⚠️ Baixo':'✅ OK';
+    return `<div class="est-card">
+      <div class="est-top">
+        <div>
+          <div class="est-nome">${p.nome}</div>
+          ${p.cod?`<div class="est-cod">${p.cod}</div>`:''}
+        </div>
+        <button class="est-del" onclick="delPeca('${p.id}')">✕</button>
+      </div>
+      <div class="est-qty-row">
+        <div class="est-qty-box">
+          ${canDo('decreaseStock')?`<button class="est-qty-btn" onclick="adjQty('${p.id}',${qty},-1)" title="Remover do estoque">−</button>`:`<button class="est-qty-btn" style="opacity:.2;cursor:not-allowed" title="Sem permissão para baixa manual">−</button>`}
+          <span class="est-qty-val ${nivel}">${qty}</span>
+          <button class="est-qty-btn" onclick="adjQty('${p.id}',${qty},1)" title="Adicionar ao estoque">+</button>
+        </div>
+        <span style="font-family:var(--fm);font-size:.65rem;color:var(--muted)">mín: ${min}</span>
+        <span style="font-family:var(--fh);font-size:.7rem;font-weight:700;padding:.15rem .42rem;border-radius:3px;${nivel==='zero'?'background:rgba(255,68,68,.12);color:var(--nok);border:1px solid rgba(255,68,68,.22)':nivel==='baixo'?'background:rgba(255,153,0,.12);color:var(--warn);border:1px solid rgba(255,153,0,.22)':'background:rgba(34,212,94,.1);color:var(--ok);border:1px solid rgba(34,212,94,.2)'}">${nivelLabel}</span>
+      </div>
+      <div class="est-meta">
+        ${p.compat?`<div class="est-mi"><span class="k">Compatível</span><span class="v">${p.compat}</span></div>`:''}
+        ${p.loc?`<div class="est-mi"><span class="k">Local</span><span class="v">${p.loc}</span></div>`:''}
+        ${canDo('viewPrices')&&p.custo?`<div class="est-mi"><span class="k">Custo</span><span class="v">R$ ${p.custo}</span></div>`:''}
+        ${canDo('viewPrices')&&p.venda?`<div class="est-mi"><span class="k">Venda</span><span class="v">R$ ${p.venda}</span></div>`:''}
+        ${p.obs?`<div class="est-mi" style="width:100%"><span class="k">Obs</span><span class="v">${p.obs}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+};
+window.adjQty=async(id,cur,delta)=>{
+  if(delta<0&&!canDo('decreaseStock')){toast('⛔ Apenas o administrador pode dar baixa manual no estoque',1);return;}
+  if(delta>0&&!canDo('addStock')){toast('⛔ Sem permissão para adicionar estoque',1);return;}
+  const nv=Math.max(0,cur+delta);
+  try{await updateDoc(doc(db,'estoque',id),{qty:nv});toast(delta>0?`+${delta} adicionado ao estoque`:`-${Math.abs(delta)} removido do estoque`);}
+  catch(e){toast(e.message,1);}
+};
+window.delPeca=async id=>{
+  if(!confirm('Remover peça do estoque?'))return;
+  try{await deleteDoc(doc(db,'estoque',id));toast('Peça removida');}catch(e){toast(e.message,1);}
+};
+
+// USUÁRIOS (só admin)
+window.criarUsuario=async()=>{
+  if(!canDo('manageUsers')){toast('Sem permissão',1);return;}
+  const email=document.getElementById('uEmail').value.trim();
+  const pass=document.getElementById('uPass').value;
+  const nome=document.getElementById('uNome').value.trim();
+  const role=document.getElementById('uRole').value;
+  if(!email||!pass||!nome){toast('Preencha todos os campos',1);return;}
+  if(pass.length<6){toast('Senha mínimo 6 caracteres',1);return;}
+  const btn=document.getElementById('uBtn');btn.disabled=true;btn.textContent='Criando...';
+  try{
+    // create auth user
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    // save profile in Firestore
+    await setDoc(doc(db,'usuarios',cred.user.uid),{nome,email,role,criadoEm:serverTimestamp()});
+    // re-sign in as admin (createUser signs in as new user)
+    await signInWithEmailAndPassword(auth,currentUser.email,document.getElementById('uAdminPass').value);
+    ['uEmail','uPass','uNome','uAdminPass'].forEach(id=>document.getElementById(id).value='');
+    toast('Usuário criado ✓');
+    renderUsuarios();
+  }catch(e){
+    toast(e.code==='auth/email-already-in-use'?'Email já cadastrado':e.message,1);
+  }
+  btn.disabled=false;btn.textContent='➕ Criar Usuário';
+};
+
+let usuarios=[];
+window.renderUsuarios=async()=>{
+  if(!canDo('manageUsers'))return;
+  const list=document.getElementById('userLst');
+  if(!list)return;
+  const snap=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(m=>m.getDocs(m.collection(db,'usuarios')));
+  usuarios=snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(!usuarios.length){list.innerHTML='<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.8rem">Nenhum usuário cadastrado</div>';return;}
+  const rl={admin:'👑 Admin',supervisor:'🔑 Supervisor',tecnico:'🔧 Técnico'};
+  const clr={admin:'rgba(0,212,255,.15)',supervisor:'rgba(245,158,11,.12)',tecnico:'rgba(34,212,94,.1)'};
+  const tc={admin:'var(--acc)',supervisor:'var(--diesel)',tecnico:'var(--ok)'};
+  list.innerHTML=usuarios.map(u=>`
+    <div style="background:var(--card);border:1px solid var(--bor);border-radius:8px;padding:.75rem .9rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem;">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:1.1rem;font-weight:900;color:#fff;flex-shrink:0">${(u.nome||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-family:var(--fh);font-size:1rem;font-weight:800">${u.nome}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${u.email}</div>
+      </div>
+      <select onchange="changeRole('${u.id}',this.value)" style="width:130px;font-size:.8rem;padding:.3rem .5rem" ${u.id===currentUser?.uid?'disabled':''}>
+        <option value="admin"   ${u.role==='admin'?'selected':''}>👑 Admin</option>
+        <option value="supervisor" ${u.role==='supervisor'?'selected':''}>🔑 Supervisor</option>
+        <option value="tecnico" ${u.role==='tecnico'?'selected':''}>🔧 Técnico</option>
+      </select>
+    </div>`).join('');
+};
+window.changeRole=async(uid,role)=>{
+  if(!canDo('manageUsers')){toast('Sem permissão',1);return;}
+  try{await updateDoc(doc(db,'usuarios',uid),{role});toast('Permissão atualizada ✓');}catch(e){toast(e.message,1);}
+};
+
+// ORÇAMENTO
+window.openOrcamento=()=>{
+  if(!canDo('viewPrices')){toast('⛔ Sem permissão',1);return;}
+  const os=currentOS;
+  document.getElementById('orc-num').textContent=`Nº ${String(os.num||'?').padStart(4,'0')} · ${os.data||''} ${os.hora||''}`;
+  document.getElementById('orc-data').textContent=`Emitido em: ${new Date().toLocaleDateString('pt-BR')}`;
+  document.getElementById('orc-gd').innerHTML=`
+    <div class="pmi"><span class="k">Veículo / Placa</span><span class="v">${os.placa||'—'}</span></div>
+    <div class="pmi"><span class="k">Cliente</span><span class="v">${os.cliente||'—'}</span></div>
+    <div class="pmi"><span class="k">Equipamento</span><span class="v">${os.marca||'—'}${os.modelo?' · '+os.modelo:''} · ${os.tipo==='acoplado'?'⚡ Acoplado':'🔧 Diesel'}</span></div>
+    <div class="pmi"><span class="k">Técnico</span><span class="v">${os.tecnico||'—'}</span></div>`;
+  document.getElementById('orc-df').textContent=os.defeito||'—';
+
+  const pecas=(os.pecas||[]);  // todas as peças, não só autorizadas
+  window._orcPecas=pecas;
+
+  const tbody=document.getElementById('orc-items');
+  if(pecas.length){
+    tbody.innerHTML=pecas.map((p,i)=>{
+      const qty=parseFloat(p.qty)||1;
+      const unit=parseFloat((p.venda||'0').replace(',','.').replace('R$','').trim())||0;
+      const total=qty*unit;
+      return `<tr style="border-bottom:1px solid #eee">
+        <td style="padding:.4rem .5rem">
+          ${p.name}${p.cod?` <span style="font-size:.75em;color:#aaa">[${p.cod}]</span>`:''}
+          <span style="font-size:.7em;font-family:'Barlow Condensed',sans-serif;font-weight:700;margin-left:.4rem;padding:.1rem .4rem;border-radius:3px;
+            ${p.auth==='autorizado'?'background:#e6f9ee;color:#1a7a3c':p.auth==='nao_autorizado'?'background:#ffeaea;color:#b22222':'background:#fff4e0;color:#8c5500'}">
+            ${p.auth==='autorizado'?'✅ Aprovado':p.auth==='nao_autorizado'?'❌ Recusado':'⏳ Pendente'}
+          </span>
+        </td>
+        <td style="text-align:center;padding:.4rem .5rem">${qty}</td>
+        <td style="text-align:right;padding:.4rem .5rem">
+          <input type="text" value="${unit>0?unit.toFixed(2):'0,00'}" oninput="updItem(${i},this.value)"
+            style="width:75px;border:1px solid #ddd;border-radius:3px;padding:.2rem .4rem;font-size:.82rem;text-align:right;background:#fff;color:#111">
+        </td>
+        <td style="text-align:right;padding:.4rem .5rem;font-weight:600" id="orc-row-${i}">R$ ${total.toFixed(2).replace('.',',')}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:#aaa;padding:.8rem;font-size:.82rem">Nenhuma peça adicionada nesta OS</td></tr>`;
+  }
+
+  document.getElementById('orc-mo').value='';
+  document.getElementById('orc-validade').value='';
+  document.getElementById('orc-pgto').value='';
+  document.getElementById('orc-obs').value='';
+  calcTotal();
+  document.getElementById('orcov').classList.add('op');
+};
+
+window.updItem=(i,val)=>{
+  const p=window._orcPecas&&window._orcPecas[i];if(!p)return;
+  const qty=parseFloat(p.qty)||1;
+  const unit=parseFloat(val.replace(',','.'))||0;
+  const total=qty*unit;
+  const cell=document.getElementById('orc-row-'+i);
+  if(cell)cell.textContent='R$ '+total.toFixed(2).replace('.',',');
+  calcTotal();
+};
+
+window.calcTotal=()=>{
+  // soma peças
+  let sub=0;
+  document.querySelectorAll('#orc-items tr').forEach((tr,i)=>{
+    const inp=tr.querySelector('input');
+    const qty=parseFloat((window._orcPecas&&window._orcPecas[i]?.qty)||1);
+    if(inp){sub+=qty*(parseFloat(inp.value.replace(',','.'))||0);}
+  });
+  const mo=parseFloat((document.getElementById('orc-mo')?.value||'0').replace(',','.'))||0;
+  const total=sub+mo;
+  const fmt=v=>'R$ '+v.toFixed(2).replace('.',',');
+  const s=document.getElementById('orc-sub');if(s)s.textContent=fmt(sub);
+  const m=document.getElementById('orc-mo-total');if(m)m.textContent=fmt(mo);
+  const t=document.getElementById('orc-total');if(t)t.textContent=fmt(total);
+};
+
+// ═══ VENDAS ═══
+let _vendaPecas=[],_vendaPecaSel=null;
+
+window.renderVendaModelo=(marca)=>{
+  const wrap=document.getElementById('vModeloWrap');
+  if(!wrap)return;
+  const modelos=MODELOS[marca];
+  if(modelos){
+    let opts='<option value="">Selecione o modelo...</option>';
+    opts+=`<optgroup label="🔧 Diesel">${modelos.diesel.map(m=>`<option value="${m}">${m}</option>`).join('')}</optgroup>`;
+    opts+=`<optgroup label="⚡ Acoplado">${modelos.acoplado.map(m=>`<option value="${m}">${m}</option>`).join('')}</optgroup>`;
+    opts+='<optgroup label="✏️ Outro"><option value="outro">Digitar manualmente...</option></optgroup>';
+    wrap.innerHTML=`
+      <select id="vModeloSel" onchange="onVModeloChange(this.value)" style="width:100%">${opts}</select>
+      <div id="vModeloManual" style="display:none;margin-top:.4rem">
+        <input type="text" id="vModelo" placeholder="Digite o modelo...">
+      </div>`;
+  } else {
+    wrap.innerHTML=`<input type="text" id="vModelo" placeholder="Modelo do equipamento...">`;
+  }
+};
+window.onVModeloChange=val=>{
+  const manualDiv=document.getElementById('vModeloManual');
+  if(val==='outro'){if(manualDiv)manualDiv.style.display='block';}
+  else{if(manualDiv)manualDiv.style.display='none';}
+};
+function getVModeloValue(){
+  const sel=document.getElementById('vModeloSel');
+  if(sel){const v=sel.value;return v==='outro'?(document.getElementById('vModelo')?.value.trim()||''):v;}
+  return document.getElementById('vModelo')?.value.trim()||'';
+}
+
+// autocomplete estoque para vendas
+window.acVendaEstoque=q=>{
+  const list=document.getElementById('aclVEst');
+  if(!list)return;
+  _vendaPecaSel=null;
+  document.getElementById('vPecaPreview').textContent='';
+  if(!q||q.length<1){list.classList.remove('op');return;}
+  const m=estoque.filter(p=>(p.nome||'').toLowerCase().includes(q.toLowerCase())||(p.cod||'').toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!m.length){list.classList.remove('op');return;}
+  window._vEstMatches=m;
+  list.innerHTML=m.map((p,i)=>`
+    <div class="aci" onclick="selVEstIdx(${i})">
+      <strong>${p.nome}</strong>${p.cod?` <span style="opacity:.5;font-size:.8em">[${p.cod}]</span>`:''}
+      <div class="acs">Estoque: ${p.qty||0} · R$ ${p.venda||'—'}</div>
+    </div>`).join('');
+  list.classList.add('op');
+};
+window.selVEstIdx=i=>{
+  const p=window._vEstMatches&&window._vEstMatches[i];if(!p)return;
+  _vendaPecaSel=p;
+  document.getElementById('vPecaNome').value=p.nome;
+  document.getElementById('aclVEst').classList.remove('op');
+  const prev=document.getElementById('vPecaPreview');
+  if(prev){prev.textContent=(p.qty||0)+' em estoque · R$ '+(p.venda||'—');prev.style.color='var(--ok)';}
+};
+
+window.addVendaPeca=()=>{
+  const nome=document.getElementById('vPecaNome').value.trim();
+  if(!nome){toast('Informe a peça',1);return;}
+  const qty=parseInt(document.getElementById('vPecaQty').value)||1;
+  const item={name:nome,qty,estId:_vendaPecaSel?.id||'',cod:_vendaPecaSel?.cod||'',custo:_vendaPecaSel?.custo||'',venda:_vendaPecaSel?.venda||''};
+  _vendaPecas.push(item);
+  document.getElementById('vPecaNome').value='';
+  document.getElementById('vPecaQty').value='';
+  document.getElementById('vPecaPreview').textContent='';
+  _vendaPecaSel=null;
+  renderVPecas();
+};
+function renderVPecas(){
+  const list=document.getElementById('vPecaLst');
+  if(!_vendaPecas.length){list.innerHTML='<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:.5rem">Nenhuma peça adicionada</div>';return;}
+  list.innerHTML=_vendaPecas.map((p,i)=>`
+    <div class="part-item">
+      <div class="part-top">
+        <span class="pn">${p.name}</span>
+        <span class="pqt">× ${p.qty}</span>
+        ${p.venda?`<span class="pqt" style="color:var(--ok)">R$ ${p.venda}</span>`:''}
+        <button class="pbx" onclick="rmVPeca(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+window.rmVPeca=i=>{_vendaPecas.splice(i,1);renderVPecas();};
+
+window.salvarVenda=async()=>{
+  if(userRole!=='admin'){toast('⛔ Apenas admin pode registrar vendas',1);return;}
+  const marca=document.getElementById('vMarca').value;
+  const modelo=getVModeloValue();
+  const valor=document.getElementById('vValor').value.trim();
+  const cliente=document.getElementById('vCliente').value.trim();
+  if(!marca){toast('Selecione a marca',1);return;}
+  if(!valor){toast('Informe o valor de venda',1);return;}
+  if(!cliente){toast('Informe o comprador',1);return;}
+
+  const btn=document.getElementById('vBtn');btn.disabled=true;btn.textContent='Salvando...';
+  const now=new Date();
+  try{
+    // 1. Salva a venda
+    await addDoc(collection(db,'vendas'),{
+      marca,modelo,
+      ano:document.getElementById('vAno').value.trim(),
+      horas:document.getElementById('vHoras').value.trim(),
+      valor,cliente,
+      data:document.getElementById('vData').value.trim()||now.toLocaleDateString('pt-BR'),
+      obs:document.getElementById('vObs').value.trim(),
+      pecas:[..._vendaPecas],
+      timestamp:serverTimestamp()
+    });
+    // 2. Dar baixa no estoque para cada peça
+    for(const p of _vendaPecas){
+      if(!p.estId)continue;
+      const item=estoque.find(e=>e.id===p.estId);
+      if(item){
+        const novaQty=Math.max(0,(item.qty||0)-p.qty);
+        await updateDoc(doc(db,'estoque',p.estId),{qty:novaQty});
+      }
+    }
+    // 3. Reset form
+    ['vMarca','vAno','vHoras','vValor','vCliente','vData','vObs'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.value='';
+    });
+    const wrap=document.getElementById('vModeloWrap');
+    if(wrap)wrap.innerHTML='<input type="text" id="vModelo" placeholder="Selecione a marca primeiro..." disabled style="opacity:.5">';
+    _vendaPecas=[];renderVPecas();
+    toast(`✅ Venda registrada! Baixa de ${_vendaPecas.length||0} peça(s) no estoque`);
+  }catch(e){toast(e.message,1);}
+  btn.disabled=false;btn.textContent='💵 Registrar Venda';
+};
+
+window.renderVendas=()=>{
+  const q=(document.getElementById('vendasQ')?.value||'').toLowerCase();
+  const list=document.getElementById('vendasLst');
+  if(!list)return;
+  const data=vendas.filter(v=>!q||(v.marca||'').toLowerCase().includes(q)||(v.modelo||'').toLowerCase().includes(q)||(v.cliente||'').toLowerCase().includes(q));
+  if(!data.length){
+    list.innerHTML=`<div class="empty"><div class="empty-ico">💵</div><div class="empty-txt">${vendas.length?'Sem resultados':'Nenhuma venda registrada'}</div></div>`;
+    return;
+  }
+  list.innerHTML=data.map(v=>`
+    <div class="venda-card">
+      <div class="venda-top">
+        <div>
+          <div class="venda-equip">${v.marca||'—'}${v.modelo?' · '+v.modelo:''}</div>
+          <div style="font-family:var(--fm);font-size:.62rem;color:var(--muted)">${v.data||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="venda-valor">R$ ${v.valor||'—'}</div>
+          <div style="display:flex;gap:.3rem;justify-content:flex-end;margin-top:.3rem;flex-wrap:wrap;">
+            <button style="background:none;border:1px solid rgba(245,158,11,.3);color:var(--diesel);border-radius:4px;padding:.15rem .5rem;cursor:pointer;font-size:.7rem;font-family:var(--fh);font-weight:700" onclick="emitirNFeVenda('${v.id}')">🧾 NF-e</button>
+            <button style="background:none;border:1px solid rgba(255,68,68,.28);color:var(--nok);border-radius:4px;padding:.15rem .5rem;cursor:pointer;font-size:.7rem;font-family:var(--fh);font-weight:700" onclick="delVenda('${v.id}')">Excluir</button>
+          </div>
+          ${v.nfe_id?`<div style="font-family:var(--fm);font-size:.6rem;color:var(--ok);margin-top:.2rem">✅ NF-e emitida</div>`:''}
+        </div>
+      </div>
+      <div class="venda-meta">
+        <div class="vmi"><span class="k">Comprador</span><span class="v">${v.cliente||'—'}</span></div>
+        ${v.ano?`<div class="vmi"><span class="k">Ano</span><span class="v">${v.ano}</span></div>`:''}
+        ${v.horas?`<div class="vmi"><span class="k">Horas</span><span class="v">${v.horas}</span></div>`:''}
+        ${v.obs?`<div class="vmi" style="width:100%"><span class="k">Obs</span><span class="v">${v.obs}</span></div>`:''}
+      </div>
+      ${(v.pecas||[]).length?`
+        <div class="venda-pecas">
+          <div style="font-family:var(--fm);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem">Peças trocadas</div>
+          ${v.pecas.map(p=>`<div class="vp-item"><span>${p.name}</span><span class="pqt">× ${p.qty}</span>${p.venda?`<span style="color:var(--ok);font-size:.75rem">R$ ${p.venda}</span>`:''}</div>`).join('')}
+        </div>`:''}
+    </div>`).join('');
+};
+window.delVenda=async id=>{
+  if(!confirm('Excluir esta venda?'))return;
+  try{await deleteDoc(doc(db,'vendas',id));toast('Venda removida');}catch(e){toast(e.message,1);}
+};
+
+// ═══════════════════════════════════════════
+// NUVEM FISCAL — INTEGRAÇÃO VIA BACKEND
+// ═══════════════════════════════════════════
+
+// Chamar API Nuvem Fiscal via backend Netlify (resolve CORS)
+async function nfApi(method, path, body) {
+  // Em desenvolvimento local usa o proxy do Netlify Dev
+  // Em produção usa /.netlify/functions/nuvemfiscal
+  const backendUrl = '/.netlify/functions/nuvemfiscal';
+
+  const resp = await fetch(backendUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ method, path, body })
+  });
+
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || data.message || `Erro ${resp.status}`);
+  return data;
+}
+
+// Abrir modal de NF
+function nfModalShow(icon,title,status){
+  const m=document.getElementById('nfModal');
+  document.getElementById('nfIcon').textContent=icon;
+  document.getElementById('nfTitle').textContent=title;
+  document.getElementById('nfStatus').textContent=status;
+  document.getElementById('nfResult').style.display='none';
+  document.getElementById('nfError').style.display='none';
+  m.classList.add('op');
+}
+function nfModalResult(pdfUrl,xmlUrl,info){
+  document.getElementById('nfTitle').textContent='Nota emitida com sucesso!';
+  document.getElementById('nfStatus').textContent='';
+  document.getElementById('nfIcon').textContent='✅';
+  document.getElementById('nfInfo').innerHTML=info;
+  if(pdfUrl){document.getElementById('nfPdfLink').href=pdfUrl;document.getElementById('nfPdfLink').style.display='';}
+  else document.getElementById('nfPdfLink').style.display='none';
+  if(xmlUrl){document.getElementById('nfXmlLink').href=xmlUrl;document.getElementById('nfXmlLink').style.display='';}
+  else document.getElementById('nfXmlLink').style.display='none';
+  document.getElementById('nfResult').style.display='block';
+}
+function nfModalError(msg){
+  document.getElementById('nfTitle').textContent='Erro na emissão';
+  document.getElementById('nfIcon').textContent='❌';
+  document.getElementById('nfStatus').textContent='';
+  document.getElementById('nfErrorMsg').textContent=msg;
+  document.getElementById('nfError').style.display='block';
+}
+
+// Mostrar notas já emitidas na OS
+function renderNotasEmitidas(os){
+  const el=document.getElementById('notasEmitidas');
+  if(!el)return;
+  const notas=os.notas||[];
+  if(!notas.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="font-family:var(--fh);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;">Notas Emitidas</div>`+
+  notas.map(n=>`
+    <div style="background:var(--surf);border:1px solid rgba(34,212,94,.2);border-radius:6px;padding:.5rem .7rem;margin-bottom:.3rem;display:flex;align-items:center;gap:.5rem;">
+      <span style="font-size:.8rem">${n.tipo==='nfse'?'📄 NFS-e':'🧾 NF-e'}</span>
+      <div style="flex:1">
+        <div style="font-family:var(--fm);font-size:.65rem;color:var(--ok)">✅ ${n.tipo==='nfse'?'NFS-e':'NF-e'} emitida</div>
+        <div style="font-family:var(--fm);font-size:.6rem;color:var(--muted)">${n.numero||''} · ${n.data||''}</div>
+      </div>
+      ${n.pdfUrl?`<a href="${n.pdfUrl}" target="_blank" style="font-family:var(--fh);font-size:.7rem;font-weight:700;color:var(--acc);text-decoration:none;border:1px solid var(--acc2);padding:.15rem .4rem;border-radius:3px">PDF</a>`:''}
+    </div>`).join('');
+}
+
+// ── NFS-e (Mão de Obra) ──
+window.emitirNFSe=async()=>{
+  if(!canDo('viewPrices')){toast('⛔ Sem permissão',1);return;}
+  const os=currentOS;
+  nfModalShow('📄','Emitindo NFS-e...','Conectando à Nuvem Fiscal...');
+
+  // valor da mão de obra — abre prompt para digitar
+  const moStr=prompt('Valor da mão de obra (R$):\n(somente números, ex: 350.00)');
+  if(!moStr)return document.getElementById('nfModal').classList.remove('op');
+  const valorMO=parseFloat(moStr.replace(',','.'))||0;
+  if(valorMO<=0){nfModalError('Valor inválido');return;}
+
+  try{
+    document.getElementById('nfStatus').textContent='Criando NFS-e na SEFAZ...';
+    const payload={
+      ambiente: NF_CONFIG.ambiente,
+      prestador:{
+        cpf_cnpj: NF_CONFIG.cnpjEmitente.replace(/\D/g,''),
+        inscricao_municipal: '0000000', // sandbox
+        codigo_municipio: NF_CONFIG.cMunicipio
+      },
+      tomador:{
+        cpf_cnpj: '00000000000', // sandbox - CPF genérico
+        razao_social: os.cliente||'CONSUMIDOR FINAL',
+        email: ''
+      },
+      servico:{
+        valor_servicos: valorMO,
+        valor_liquido: valorMO,
+        item_lista_servico: NF_CONFIG.codServico,
+        discriminacao: `Serviço de manutenção e reparação de equipamento de refrigeração ${os.marca||''} ${os.modelo||''} - Placa: ${os.placa||''} - OS #${String(os.num||'?').padStart(4,'0')} - ${os.defeito||''}`,
+        codigo_municipio: NF_CONFIG.cMunicipio,
+        iss_retido: false,
+        aliquota: NF_CONFIG.aliquotaISS/100
+      },
+      data_emissao: new Date().toISOString()
+    };
+
+    const resp=await nfApi('POST','/nfse',payload);
+    const id=resp.id||resp.nfse_id||resp.data?.id;
+    document.getElementById('nfStatus').textContent='Aguardando autorização da prefeitura...';
+
+    // Aguarda processamento (polling)
+    let nfse=null;
+    for(let i=0;i<10;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      try{
+        nfse=await nfApi('GET',`/nfse/${id}`);
+        if(nfse.status==='autorizado'||nfse.status==='emitido')break;
+        if(nfse.status==='erro'||nfse.status==='cancelado')throw new Error(nfse.mensagem_sefaz||'Erro na prefeitura');
+      }catch(e){if(e.message.includes('404'))continue;throw e;}
+    }
+
+    const num=nfse?.numero||id;
+    const pdfUrl=nfse?.link_pdf||nfse?.pdf_url||'';
+    const xmlUrl=nfse?.link_xml||nfse?.xml_url||'';
+
+    // Salva nota no Firebase
+    const notas=[...(os.notas||[]),{tipo:'nfse',id,numero:String(num),pdfUrl,xmlUrl,valor:valorMO,data:new Date().toLocaleDateString('pt-BR')}];
+    await updateDoc(doc(db,'ordens',os.id),{notas});
+    currentOS.notas=notas;
+    renderNotasEmitidas(currentOS);
+
+    nfModalResult(pdfUrl,xmlUrl,`
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:#333">
+        <div><strong>Número:</strong> ${num}</div>
+        <div><strong>Valor:</strong> R$ ${valorMO.toFixed(2).replace('.',',')}</div>
+        <div><strong>Serviço:</strong> ${NF_CONFIG.descServico}</div>
+        <div><strong>Tomador:</strong> ${os.cliente||'—'}</div>
+      </div>`);
+    toast('✅ NFS-e emitida com sucesso!');
+  }catch(e){
+    nfModalError(e.message);
+    console.error('NFS-e error:',e);
+  }
+};
+
+// ── NF-e (Peças) ──
+window.emitirNFe=async()=>{
+  if(!canDo('viewPrices')){toast('⛔ Sem permissão',1);return;}
+  const os=currentOS;
+  const pecasAut=(os.pecas||[]).filter(p=>p.auth==='autorizado'&&p.done);
+  if(!pecasAut.length){
+    toast('⛔ Nenhuma peça autorizada e substituída para emitir NF-e',1);return;
+  }
+  nfModalShow('🧾','Emitindo NF-e...','Conectando à Nuvem Fiscal...');
+
+  try{
+    const itens=pecasAut.map((p,i)=>({
+      numero_item: i+1,
+      codigo_produto: p.cod||`PECA${i+1}`,
+      descricao: p.name,
+      cfop: '5102',
+      unidade_comercial: 'UN',
+      quantidade_comercial: parseFloat(p.qty)||1,
+      valor_unitario_comercial: parseFloat((p.venda||'0').replace(',','.'))||0,
+      valor_bruto: (parseFloat(p.qty)||1)*(parseFloat((p.venda||'0').replace(',','.'))||0),
+      unidade_tributavel: 'UN',
+      quantidade_tributavel: parseFloat(p.qty)||1,
+      valor_unitario_tributavel: parseFloat((p.venda||'0').replace(',','.'))||0,
+      tributacao: {
+        icms:{origem:0,cst:'41',modalidade_bc:3,valor_bc:0,aliquota:0,valor:0},
+        pis:{cst:'07',valor_base:0,aliquota:0,valor:0},
+        cofins:{cst:'07',valor_base:0,aliquota:0,valor:0}
+      }
+    }));
+
+    const total=itens.reduce((s,i)=>s+i.valor_bruto,0);
+
+    const payload={
+      ambiente: NF_CONFIG.ambiente,
+      tipo_emissao: 1,
+      natureza_operacao: 'VENDA DE MERCADORIA',
+      data_emissao: new Date().toISOString(),
+      emitente:{
+        cpf_cnpj: NF_CONFIG.cnpjEmitente.replace(/\D/g,''),
+        razao_social: NF_CONFIG.razaoSocial,
+        nome_fantasia: 'GOY REFRIGERACAO',
+        endereco:{logradouro:'Rua Teste',numero:'100',municipio:'Curitiba',uf:'PR',cep:'80000000',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'},
+        regime_tributario: NF_CONFIG.regimeTrib
+      },
+      destinatario:{
+        cpf_cnpj: '00000000000',
+        razao_social: os.cliente||'CONSUMIDOR FINAL',
+        tipo_contribuinte: 9,
+        endereco:{logradouro:'Rua do Cliente',numero:'1',municipio:'Curitiba',uf:'PR',cep:'80000001',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'}
+      },
+      itens,
+      total:{icms_total:{valor_produtos:total,valor_nf:total,valor_frete:0,valor_desconto:0}},
+      transporte:{modalidade_frete:9},
+      informacoes_adicionais_fisco:`OS #${String(os.num||'?').padStart(4,'0')} - Placa: ${os.placa||''}`
+    };
+
+    document.getElementById('nfStatus').textContent='Enviando para SEFAZ...';
+    const resp=await nfApi('POST','/nfe',payload);
+    const id=resp.id||resp.data?.id;
+    document.getElementById('nfStatus').textContent='Aguardando autorização da SEFAZ...';
+
+    let nfe=null;
+    for(let i=0;i<15;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      try{
+        nfe=await nfApi('GET',`/nfe/${id}`);
+        if(nfe.status==='autorizado')break;
+        if(nfe.status==='erro'||nfe.status==='cancelado')throw new Error(nfe.mensagem_sefaz||'Recusada pela SEFAZ');
+      }catch(e){if(e.message.includes('404'))continue;throw e;}
+    }
+
+    const chave=nfe?.chave||id;
+    const pdfUrl=nfe?.link_pdf||nfe?.danfe_url||'';
+    const xmlUrl=nfe?.link_xml||'';
+
+    const notas=[...(os.notas||[]),{tipo:'nfe',id,chave,pdfUrl,xmlUrl,valor:total,data:new Date().toLocaleDateString('pt-BR')}];
+    await updateDoc(doc(db,'ordens',os.id),{notas});
+    currentOS.notas=notas;
+    renderNotasEmitidas(currentOS);
+
+    nfModalResult(pdfUrl,xmlUrl,`
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:#333">
+        <div><strong>Chave:</strong> <span style="word-break:break-all">${chave}</span></div>
+        <div><strong>Total peças:</strong> R$ ${total.toFixed(2).replace('.',',')}</div>
+        <div><strong>${pecasAut.length} peça(s)</strong> incluída(s)</div>
+        <div><strong>Destinatário:</strong> ${os.cliente||'—'}</div>
+      </div>`);
+    toast('✅ NF-e emitida com sucesso!');
+  }catch(e){
+    nfModalError(e.message);
+    console.error('NF-e error:',e);
+  }
+};
+
+// ── NF-e Venda de Equipamento ──
+window.emitirNFeVenda=async(vendaId)=>{
+  if(userRole!=='admin'){toast('⛔ Sem permissão',1);return;}
+  const v=vendas.find(x=>x.id===vendaId);
+  if(!v)return;
+  if(v.nfe_id){toast('NF-e já emitida para esta venda',1);return;}
+  nfModalShow('🧾','Emitindo NF-e - Venda de Equipamento...','Conectando à Nuvem Fiscal...');
+
+  try{
+    const valor=parseFloat((v.valor||'0').replace(',','.'))||0;
+    const itens=[{
+      numero_item:1,
+      codigo_produto:'EQUIP001',
+      descricao:`Equipamento de refrigeração ${v.marca||''} ${v.modelo||''} Ano: ${v.ano||'N/I'} Horas: ${v.horas||'N/I'}`,
+      cfop:'5102',
+      unidade_comercial:'UN',
+      quantidade_comercial:1,
+      valor_unitario_comercial:valor,
+      valor_bruto:valor,
+      unidade_tributavel:'UN',
+      quantidade_tributavel:1,
+      valor_unitario_tributavel:valor,
+      tributacao:{
+        icms:{origem:0,cst:'41',modalidade_bc:3,valor_bc:0,aliquota:0,valor:0},
+        pis:{cst:'07',valor_base:0,aliquota:0,valor:0},
+        cofins:{cst:'07',valor_base:0,aliquota:0,valor:0}
+      }
+    }];
+
+    const payload={
+      ambiente:NF_CONFIG.ambiente,tipo_emissao:1,
+      natureza_operacao:'VENDA DE EQUIPAMENTO USADO',
+      data_emissao:new Date().toISOString(),
+      emitente:{cpf_cnpj:NF_CONFIG.cnpjEmitente.replace(/\D/g,''),razao_social:NF_CONFIG.razaoSocial,nome_fantasia:'GOY REFRIGERACAO',endereco:{logradouro:'Rua Teste',numero:'100',municipio:'Curitiba',uf:'PR',cep:'80000000',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'},regime_tributario:NF_CONFIG.regimeTrib},
+      destinatario:{cpf_cnpj:'00000000000',razao_social:v.cliente||'CONSUMIDOR FINAL',tipo_contribuinte:9,endereco:{logradouro:'Rua do Cliente',numero:'1',municipio:'Curitiba',uf:'PR',cep:'80000001',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'}},
+      itens,
+      total:{icms_total:{valor_produtos:valor,valor_nf:valor,valor_frete:0,valor_desconto:0}},
+      transporte:{modalidade_frete:9}
+    };
+
+    document.getElementById('nfStatus').textContent='Enviando para SEFAZ...';
+    const resp=await nfApi('POST','/nfe',payload);
+    const id=resp.id||resp.data?.id;
+    document.getElementById('nfStatus').textContent='Aguardando autorização...';
+
+    let nfe=null;
+    for(let i=0;i<15;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      try{nfe=await nfApi('GET',`/nfe/${id}`);if(nfe.status==='autorizado')break;if(nfe.status==='erro')throw new Error(nfe.mensagem_sefaz||'Erro SEFAZ');}
+      catch(e){if(e.message.includes('404'))continue;throw e;}
+    }
+
+    await updateDoc(doc(db,'vendas',vendaId),{nfe_id:id,nfe_chave:nfe?.chave||id,nfe_pdf:nfe?.link_pdf||''});
+    nfModalResult(nfe?.link_pdf||'',nfe?.link_xml||'',`
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:#333">
+        <div><strong>Equipamento:</strong> ${v.marca||''} ${v.modelo||''}</div>
+        <div><strong>Valor:</strong> R$ ${valor.toFixed(2).replace('.',',')}</div>
+        <div><strong>Comprador:</strong> ${v.cliente||'—'}</div>
+      </div>`);
+    toast('✅ NF-e de venda emitida!');
+  }catch(e){nfModalError(e.message);console.error('NF-e venda error:',e);}
+};
+
+// ═══ PAINEL NF EMISSÃO ═══
+let _nfpItems=[];
+
+window.openNFPainel=(tab='nfse')=>{
+  if(!canDo('viewPrices')){toast('⛔ Sem permissão',1);return;}
+  const os=currentOS;
+  // encontra dados do cliente no banco
+  const cli=clientes.find(c=>c.nome===os.cliente)||{nome:os.cliente||'—'};
+
+  document.getElementById('nfpOsRef').textContent=`OS #${String(os.num||'?').padStart(4,'0')} · ${os.placa||''} · ${os.data||''}`;
+  document.getElementById('nfpCliente').textContent=cli.nome||'—';
+  document.getElementById('nfpClienteDoc').textContent=cli.doc||'CPF/CNPJ não cadastrado';
+
+  // NFS-e: discriminação automática
+  const disc=`Serviço de manutenção e reparação de equipamento de refrigeração\nMarca: ${os.marca||''} ${os.modelo||''}\nPlaca: ${os.placa||''}\nDefeitp/Serviço: ${os.defeito||''}\nOS #${String(os.num||'?').padStart(4,'0')}`;
+  document.getElementById('nfpDisc').value=disc;
+  document.getElementById('nfpMoValor').value='';
+  document.getElementById('nfpExtras').innerHTML='';
+  _nfpItems=[];
+
+  // NF-e: tabela de peças
+  const pecasAut=(os.pecas||[]).filter(p=>p.auth==='autorizado'&&p.done);
+  renderNfpPecas(pecasAut);
+
+  document.getElementById('nfpResult').style.display='none';
+  nfpCalc();
+  nfpTab(tab);
+  document.getElementById('nfPainel').classList.add('op');
+};
+
+window.nfpTab=t=>{
+  ['nfse','nfe'].forEach(x=>{
+    document.getElementById('nfpBody-'+x).style.display=t===x?'block':'none';
+    const btn=document.getElementById('nfpTab-'+x);
+    if(btn){btn.style.color=t===x?'#0076aa':'#999';btn.style.borderBottomColor=t===x?'#0076aa':'transparent';}
+  });
+};
+
+function renderNfpPecas(pecas){
+  const tbl=document.getElementById('nfpPecasTable');
+  const fisc=document.getElementById('nfpPecasFiscal');
+  if(!pecas.length){
+    tbl.innerHTML='<div style="color:#aaa;font-size:.82rem;text-align:center;padding:.5rem">Nenhuma peça autorizada e substituída</div>';
+    fisc.innerHTML='';
+    document.getElementById('nfpTotProd').textContent='R$ 0,00';
+    document.getElementById('nfpTotalNfe').textContent='R$ 0,00';
+    return;
+  }
+  let total=0;
+  tbl.innerHTML=pecas.map((p,i)=>{
+    const qty=parseFloat(p.qty)||1;
+    const unit=parseFloat((p.venda||'0').replace(',','.'))||0;
+    const sub=qty*unit; total+=sub;
+    return `<div style="display:flex;align-items:center;gap:.4rem;padding:.38rem 0;border-bottom:1px solid #eee;font-size:.82rem">
+      <span style="flex:1;font-weight:500">${p.name}</span>
+      <span style="color:#888">× ${qty}</span>
+      <input type="text" value="${unit.toFixed(2)}" oninput="updNfpPeca(${i},this.value)"
+        style="width:72px;border:1px solid #ddd;border-radius:3px;padding:.2rem .4rem;font-size:.8rem;text-align:right;background:#fff;color:#111">
+      <span style="font-weight:600;min-width:72px;text-align:right" id="nfpPRow${i}">R$ ${sub.toFixed(2).replace('.',',')}</span>
+    </div>`;
+  }).join('');
+  // campos fiscais por peça
+  fisc.innerHTML=pecas.map((p,i)=>{
+    const est=estoque.find(e=>e.id===p.estId)||{};
+    return `<div style="background:#f8f9fa;border-radius:5px;padding:.55rem .7rem;margin-bottom:.4rem">
+      <div style="font-weight:600;font-size:.82rem;margin-bottom:.35rem">${p.name}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.4rem">
+        <div><div style="font-family:'IBM Plex Mono',monospace;font-size:.57rem;color:#aaa;text-transform:uppercase">NCM</div>
+          <input type="text" id="nfpNcm${i}" value="${est.ncm||''}" placeholder="0000.00.00"
+            style="width:100%;border:1px solid #ddd;border-radius:3px;padding:.25rem .4rem;font-size:.78rem;background:#fff;color:#111"></div>
+        <div><div style="font-family:'IBM Plex Mono',monospace;font-size:.57rem;color:#aaa;text-transform:uppercase">CFOP</div>
+          <input type="text" id="nfpCfop${i}" value="${est.cfop||'5102'}"
+            style="width:100%;border:1px solid #ddd;border-radius:3px;padding:.25rem .4rem;font-size:.78rem;background:#fff;color:#111"></div>
+        <div><div style="font-family:'IBM Plex Mono',monospace;font-size:.57rem;color:#aaa;text-transform:uppercase">CSOSN</div>
+          <input type="text" id="nfpCsosn${i}" value="${est.csosn||'400'}"
+            style="width:100%;border:1px solid #ddd;border-radius:3px;padding:.25rem .4rem;font-size:.78rem;background:#fff;color:#111"></div>
+        <div><div style="font-family:'IBM Plex Mono',monospace;font-size:.57rem;color:#aaa;text-transform:uppercase">UN</div>
+          <input type="text" id="nfpUn${i}" value="${est.unidade||'UN'}"
+            style="width:100%;border:1px solid #ddd;border-radius:3px;padding:.25rem .4rem;font-size:.78rem;background:#fff;color:#111"></div>
+      </div>
+    </div>`;
+  }).join('');
+  const fmt=v=>'R$ '+v.toFixed(2).replace('.',',');
+  document.getElementById('nfpTotProd').textContent=fmt(total);
+  document.getElementById('nfpTotalNfe').textContent=fmt(total);
+}
+
+window.updNfpPeca=(i,val)=>{
+  const pecas=(currentOS.pecas||[]).filter(p=>p.auth==='autorizado'&&p.done);
+  const qty=parseFloat(pecas[i]?.qty)||1;
+  const unit=parseFloat(val.replace(',','.'))||0;
+  const sub=qty*unit;
+  const el=document.getElementById('nfpPRow'+i);if(el)el.textContent='R$ '+sub.toFixed(2).replace('.',',');
+  // recalc total
+  let total=0;
+  document.querySelectorAll('[id^="nfpPRow"]').forEach((el,j)=>{
+    const v=parseFloat(el.textContent.replace('R$ ','').replace(',','.'))||0;total+=v;
+  });
+  const fmt=v=>'R$ '+v.toFixed(2).replace('.',',');
+  document.getElementById('nfpTotProd').textContent=fmt(total);
+  document.getElementById('nfpTotalNfe').textContent=fmt(total);
+};
+
+window.nfpCalc=()=>{
+  const mo=parseFloat((document.getElementById('nfpMoValor')?.value||'0').replace(',','.'))||0;
+  const extras=_nfpItems.reduce((s,x)=>s+x.val,0);
+  const sub=mo+extras;
+  const iss=(parseFloat(document.getElementById('nfpIss')?.value)||0)/100;
+  const issVal=sub*iss;
+  const total=sub-issVal;
+  const fmt=v=>'R$ '+v.toFixed(2).replace('.',',');
+  const sp=document.getElementById('nfpSubMo');if(sp)sp.textContent=fmt(sub);
+  const ip=document.getElementById('nfpIssVal');if(ip)ip.textContent=fmt(issVal);
+  const tp=document.getElementById('nfpTotalMo');if(tp)tp.textContent=fmt(total);
+  const pp=document.getElementById('nfpIssPerc');if(pp)pp.textContent=document.getElementById('nfpIss')?.value||'2.0';
+};
+
+window.nfpAddItem=()=>{
+  const idx=_nfpItems.length;
+  _nfpItems.push({desc:'',val:0});
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem';
+  div.innerHTML=`<input type="text" placeholder="Descrição do item" oninput="_nfpItems[${idx}].desc=this.value"
+    style="flex:1;border:1px solid #ddd;border-radius:4px;padding:.3rem .5rem;font-size:.83rem;background:#fff;color:#111">
+    <span style="font-size:.8rem;color:#666">R$</span>
+    <input type="text" placeholder="0,00" oninput="_nfpItems[${idx}].val=parseFloat(this.value.replace(',','.'))||0;nfpCalc()"
+    style="width:80px;border:1px solid #ddd;border-radius:4px;padding:.3rem .4rem;font-size:.83rem;text-align:right;background:#fff;color:#111">
+    <button onclick="this.parentNode.remove();_nfpItems.splice(${idx},1);nfpCalc()"
+    style="background:none;border:none;color:#cc0000;cursor:pointer;font-size:.9rem">✕</button>`;
+  document.getElementById('nfpExtras').appendChild(div);
+};
+
+// Emitir NFS-e pelo painel
+window.emitirNFSePainel=async()=>{
+  const os=currentOS;
+  const mo=parseFloat((document.getElementById('nfpMoValor')?.value||'0').replace(',','.'))||0;
+  const extras=_nfpItems.reduce((s,x)=>s+x.val,0);
+  const valorTotal=mo+extras;
+  if(valorTotal<=0){toast('Informe o valor do serviço',1);return;}
+
+  const cli=clientes.find(c=>c.nome===os.cliente)||{};
+  const disc=document.getElementById('nfpDisc')?.value||NF_CONFIG.descServico;
+  const codServ=document.getElementById('nfpCodServ')?.value||'14.01';
+  const iss=parseFloat(document.getElementById('nfpIss')?.value)||2.0;
+  const issRet=document.getElementById('nfpIssRet')?.value==='true';
+
+  document.getElementById('nfpBtnNfse').disabled=true;
+  document.getElementById('nfpBtnNfse').textContent='Emitindo...';
+  document.getElementById('nfpResult').style.display='none';
+
+  try{
+    const payload={
+      ambiente:NF_CONFIG.ambiente,
+      prestador:{cpf_cnpj:NF_CONFIG.cnpjEmitente.replace(/\D/g,''),inscricao_municipal:'0000000',codigo_municipio:NF_CONFIG.cMunicipio},
+      tomador:{
+        cpf_cnpj:(cli.doc||'00000000000').replace(/\D/g,''),
+        razao_social:cli.nome||os.cliente||'CONSUMIDOR FINAL',
+        email:cli.email||'',
+        endereco:cli.logradouro?{logradouro:cli.logradouro,numero:cli.numero||'S/N',complemento:cli.compl||'',bairro:cli.bairro||'',municipio:cli.municipio||'Curitiba',uf:cli.uf||'PR',cep:(cli.cep||'80000000').replace(/\D/g,''),codigo_municipio:parseInt(cli.codIbge)||NF_CONFIG.cMunicipio}:undefined
+      },
+      servico:{
+        valor_servicos:valorTotal,
+        valor_liquido:valorTotal-(valorTotal*iss/100),
+        item_lista_servico:codServ,
+        discriminacao:disc,
+        codigo_municipio:NF_CONFIG.cMunicipio,
+        iss_retido:issRet,
+        aliquota:iss/100
+      },
+      data_emissao:new Date().toISOString()
+    };
+
+    const resp=await nfApi('POST','/nfse',payload);
+    const id=resp.id||resp.nfse_id;
+
+    let nfse=resp,tentativas=0;
+    while(tentativas<12&&nfse.status!=='autorizado'&&nfse.status!=='emitido'){
+      await new Promise(r=>setTimeout(r,2000));
+      try{nfse=await nfApi('GET',`/nfse/${id}`);}catch(e){break;}
+      tentativas++;
+    }
+
+    const pdfUrl=nfse.link_pdf||nfse.pdf_url||'';
+    const xmlUrl=nfse.link_xml||'';
+    const num=nfse.numero||id;
+
+    const notas=[...(os.notas||[]),{tipo:'nfse',id,numero:String(num),pdfUrl,xmlUrl,valor:valorTotal,data:new Date().toLocaleDateString('pt-BR')}];
+    await updateDoc(doc(db,'ordens',os.id),{notas});
+    currentOS.notas=notas;renderNotasEmitidas(currentOS);
+
+    document.getElementById('nfpResIcon').textContent='✅';
+    document.getElementById('nfpResTitle').textContent='NFS-e emitida com sucesso!';
+    document.getElementById('nfpResInfo').textContent=`Número: ${num} · Valor: R$ ${valorTotal.toFixed(2).replace('.',',')}`;
+    if(pdfUrl){document.getElementById('nfpPdfBtn').href=pdfUrl;document.getElementById('nfpPdfBtn').style.display='';}
+    else document.getElementById('nfpPdfBtn').style.display='none';
+    if(xmlUrl){document.getElementById('nfpXmlBtn').href=xmlUrl;document.getElementById('nfpXmlBtn').style.display='';}
+    else document.getElementById('nfpXmlBtn').style.display='none';
+    document.getElementById('nfpResult').style.display='block';
+    toast('✅ NFS-e emitida!');
+  }catch(e){
+    toast('Erro: '+e.message,1);
+    document.getElementById('nfpResIcon').textContent='❌';
+    document.getElementById('nfpResTitle').textContent='Erro na emissão';
+    document.getElementById('nfpResInfo').textContent=e.message;
+    document.getElementById('nfpPdfBtn').style.display='none';
+    document.getElementById('nfpXmlBtn').style.display='none';
+    document.getElementById('nfpResult').style.display='block';
+    console.error(e);
+  }
+  document.getElementById('nfpBtnNfse').disabled=false;
+  document.getElementById('nfpBtnNfse').textContent='📄 Emitir NFS-e';
+};
+
+// Emitir NF-e pelo painel
+window.emitirNFePainel=async()=>{
+  const os=currentOS;
+  const pecasAut=(os.pecas||[]).filter(p=>p.auth==='autorizado'&&p.done);
+  if(!pecasAut.length){toast('Nenhuma peça para emitir',1);return;}
+  const cli=clientes.find(c=>c.nome===os.cliente)||{};
+
+  document.getElementById('nfpBtnNfe').disabled=true;
+  document.getElementById('nfpBtnNfe').textContent='Emitindo...';
+  document.getElementById('nfpResult').style.display='none';
+
+  try{
+    let totalNfe=0;
+    const itens=pecasAut.map((p,i)=>{
+      const qty=parseFloat(p.qty)||1;
+      const unitEl=document.querySelectorAll('[id^="nfpPRow"]')[i];
+      const unit=parseFloat((unitEl?.textContent||'0').replace('R$ ','').replace(',','.'))/qty||parseFloat((p.venda||'0').replace(',','.'))||0;
+      const sub=qty*unit; totalNfe+=sub;
+      const ncm=(document.getElementById('nfpNcm'+i)?.value||'').replace(/\D/g,'')||'00000000';
+      const cfop=document.getElementById('nfpCfop'+i)?.value||'5102';
+      const csosn=document.getElementById('nfpCsosn'+i)?.value||'400';
+      const un=document.getElementById('nfpUn'+i)?.value||'UN';
+      return{numero_item:i+1,codigo_produto:p.cod||`P${i+1}`,descricao:p.name,ncm,cfop,unidade_comercial:un,quantidade_comercial:qty,valor_unitario_comercial:unit,valor_bruto:sub,unidade_tributavel:un,quantidade_tributavel:qty,valor_unitario_tributavel:unit,
+        tributacao:{icms:{origem:0,csosn,modalidade_bc:3,valor_bc:0,aliquota:0,valor:0},pis:{cst:'07',valor_base:0,aliquota:0,valor:0},cofins:{cst:'07',valor_base:0,aliquota:0,valor:0}}};
+    });
+
+    const payload={
+      ambiente:NF_CONFIG.ambiente,tipo_emissao:1,
+      natureza_operacao:'VENDA DE MERCADORIA',
+      data_emissao:new Date().toISOString(),
+      emitente:{cpf_cnpj:NF_CONFIG.cnpjEmitente.replace(/\D/g,''),razao_social:NF_CONFIG.razaoSocial,nome_fantasia:'GOY REFRIGERACAO',
+        endereco:{logradouro:'Rua Teste',numero:'100',municipio:'Curitiba',uf:'PR',cep:'80000000',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'},
+        regime_tributario:NF_CONFIG.regimeTrib},
+      destinatario:{cpf_cnpj:(cli.doc||'00000000000').replace(/\D/g,''),razao_social:cli.nome||os.cliente||'CONSUMIDOR FINAL',tipo_contribuinte:9,
+        endereco:cli.logradouro?{logradouro:cli.logradouro,numero:cli.numero||'S/N',municipio:cli.municipio||'Curitiba',uf:cli.uf||'PR',cep:(cli.cep||'80000000').replace(/\D/g,''),codigo_municipio:parseInt(cli.codIbge)||NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'}
+          :{logradouro:'Rua do Cliente',numero:'1',municipio:'Curitiba',uf:'PR',cep:'80000001',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'}},
+      itens,
+      total:{icms_total:{valor_produtos:totalNfe,valor_nf:totalNfe,valor_frete:0,valor_desconto:0}},
+      transporte:{modalidade_frete:9},
+      informacoes_adicionais_fisco:`OS #${String(os.num||'?').padStart(4,'0')} Placa: ${os.placa||''}`
+    };
+
+    const resp=await nfApi('POST','/nfe',payload);
+    const id=resp.id||resp.data?.id;
+
+    let nfe=resp,tentativas=0;
+    while(tentativas<15&&nfe.status!=='autorizado'){
+      await new Promise(r=>setTimeout(r,2000));
+      try{nfe=await nfApi('GET',`/nfe/${id}`);}catch(e){break;}
+      tentativas++;
+    }
+
+    const chave=nfe.chave||id;
+    const pdfUrl=nfe.link_pdf||'';const xmlUrl=nfe.link_xml||'';
+    const notas=[...(os.notas||[]),{tipo:'nfe',id,chave,pdfUrl,xmlUrl,valor:totalNfe,data:new Date().toLocaleDateString('pt-BR')}];
+    await updateDoc(doc(db,'ordens',os.id),{notas});
+    currentOS.notas=notas;renderNotasEmitidas(currentOS);
+
+    document.getElementById('nfpResIcon').textContent='✅';
+    document.getElementById('nfpResTitle').textContent='NF-e emitida com sucesso!';
+    document.getElementById('nfpResInfo').textContent=`Chave: ${chave.substring(0,20)}...`;
+    if(pdfUrl){document.getElementById('nfpPdfBtn').href=pdfUrl;document.getElementById('nfpPdfBtn').style.display='';}
+    else document.getElementById('nfpPdfBtn').style.display='none';
+    if(xmlUrl){document.getElementById('nfpXmlBtn').href=xmlUrl;document.getElementById('nfpXmlBtn').style.display='';}
+    else document.getElementById('nfpXmlBtn').style.display='none';
+    document.getElementById('nfpResult').style.display='block';
+    toast('✅ NF-e emitida!');
+  }catch(e){
+    toast('Erro: '+e.message,1);
+    document.getElementById('nfpResIcon').textContent='❌';
+    document.getElementById('nfpResTitle').textContent='Erro na emissão';
+    document.getElementById('nfpResInfo').textContent=e.message;
+    document.getElementById('nfpResult').style.display='block';
+    console.error(e);
+  }
+  document.getElementById('nfpBtnNfe').disabled=false;
+  document.getElementById('nfpBtnNfe').textContent='🧾 Emitir NF-e';
+};
+
+// CEP AUTO-PREENCHIMENTO
+window.buscarCep=async(v)=>{
+  const cep=v.replace(/\D/g,'');if(cep.length!==8)return;
+  try{
+    const r=await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d=await r.json();if(d.erro)return;
+    const set=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
+    set('cLogradouro',d.logradouro);set('cBairro',d.bairro);
+    set('cMunicipio',d.localidade);set('cUf',d.uf);
+    set('cCodIbge',d.ibge);
+    toast('CEP preenchido ✓');
+  }catch(e){console.warn('CEP error',e);}
+};
+
+window.autoTipoCliente=v=>{
+  const digits=v.replace(/\D/g,'');
+  const sel=document.getElementById('cTipo');
+  if(sel)sel.value=digits.length>11?'pj':'pf';
+};
+
+// TOAST
+window.toast=(m,e=0)=>{const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(e?' err':'');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000);};
+</script>
+</body>
+</html>
