@@ -2,7 +2,7 @@ const https = require('https');
 
 const NF_CLIENT_ID     = process.env.NF_CLIENT_ID     || 'CvTAyv8sByaYDDkW7Ylk';
 const NF_CLIENT_SECRET = process.env.NF_CLIENT_SECRET || 'lTHItvGiQH0fklvJ7DWQiPz40uj3bRapv64hiZi0';
-const NF_BASE_URL      = process.env.NF_BASE_URL       || 'https://api.nuvemfiscal.com.br';
+const NF_BASE_URL = process.env.NF_BASE_URL || 'https://api.sandbox.nuvemfiscal.com.br';
 
 let _token = null;
 let _tokenExp = 0;
@@ -39,8 +39,8 @@ async function getToken() {
   const now = Date.now();
   if (_token && now < _tokenExp) return _token;
 
-  const body = `grant_type=client_credentials&client_id=${NF_CLIENT_ID}&client_secret=${NF_CLIENT_SECRET}`;
-  const result = await httpsRequest(`${NF_BASE_URL}/auth/oauth/token`, {
+  const body = `grant_type=client_credentials&scope=nfe+nfse&client_id=${NF_CLIENT_ID}&client_secret=${NF_CLIENT_SECRET}`;
+  const result = await httpsRequest(`https://auth.nuvemfiscal.com.br/oauth/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
