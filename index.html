@@ -2450,7 +2450,7 @@ window.emitirNFe=async()=>{
 
     const payload={
       ambiente: NF_CONFIG.ambiente,
-      tipo_emissao: 1,
+      
       natureza_operacao: 'VENDA DE MERCADORIA',
       data_emissao: new Date().toISOString(),
       emitente:{
@@ -2540,7 +2540,7 @@ window.emitirNFeVenda=async(vendaId)=>{
     }];
 
     const payload={
-      ambiente:NF_CONFIG.ambiente,tipo_emissao:1,
+      ambiente:NF_CONFIG.ambiente,
       natureza_operacao:'VENDA DE EQUIPAMENTO USADO',
       data_emissao:new Date().toISOString(),
       emitente:{cpf_cnpj:NF_CONFIG.cnpjEmitente.replace(/\D/g,''),razao_social:NF_CONFIG.razaoSocial,nome_fantasia:'GOY REFRIGERACAO',endereco:{logradouro:'Rua Teste',numero:'100',municipio:'Curitiba',uf:'PR',cep:'80000000',codigo_municipio:NF_CONFIG.cMunicipio,codigo_pais:'1058',nome_pais:'Brasil'},regime_tributario:NF_CONFIG.regimeTrib},
@@ -2813,7 +2813,7 @@ window.emitirNFePainel=async()=>{
     });
 
     const payload={
-      ambiente:NF_CONFIG.ambiente,tipo_emissao:1,
+      ambiente:NF_CONFIG.ambiente,
       natureza_operacao:'VENDA DE MERCADORIA',
       data_emissao:new Date().toISOString(),
       emitente:{cpf_cnpj:NF_CONFIG.cnpjEmitente.replace(/\D/g,''),razao_social:NF_CONFIG.razaoSocial,nome_fantasia:'GOY REFRIGERACAO',
