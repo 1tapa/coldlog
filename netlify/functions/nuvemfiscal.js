@@ -2,7 +2,7 @@ const https = require('https');
 
 const NF_CLIENT_ID     = process.env.NF_CLIENT_ID     || 'CvTAyv8sByaYDDkW7Ylk';
 const NF_CLIENT_SECRET = process.env.NF_CLIENT_SECRET || 'lTHItvGiQH0fklvJ7DWQiPz40uj3bRapv64hiZi0';
-const NF_BASE_URL      = process.env.NF_BASE_URL       || 'https://sandbox.api.nuvemfiscal.com.br';
+const NF_BASE_URL      = process.env.NF_BASE_URL       || 'https://api.nuvemfiscal.com.br';
 
 let _token = null;
 let _tokenExp = 0;
