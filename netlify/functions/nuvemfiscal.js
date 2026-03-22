@@ -1,12 +1,3 @@
-// ═══════════════════════════════════════════════════════
-// ColdLog — Backend Nuvem Fiscal (Netlify Function)
-// Arquivo: netlify/functions/nuvemfiscal.js
-//
-// Este arquivo fica na pasta netlify/functions/
-// e resolve o problema de CORS para chamadas à API
-// da Nuvem Fiscal a partir do navegador.
-// ═══════════════════════════════════════════════════════
-
 const NF_CLIENT_ID     = process.env.NF_CLIENT_ID     || 'CvTAyv8sByaYDDkW7Ylk';
 const NF_CLIENT_SECRET = process.env.NF_CLIENT_SECRET || 'lTHItvGiQH0fklvJ7DWQiPz40uj3bRapv64hiZi0';
 const NF_BASE_URL      = process.env.NF_BASE_URL       || 'https://sandbox.api.nuvemfiscal.com.br';
@@ -14,7 +5,6 @@ const NF_BASE_URL      = process.env.NF_BASE_URL       || 'https://sandbox.api.n
 let _token = null;
 let _tokenExp = 0;
 
-// Obter token OAuth2
 async function getToken() {
   const now = Date.now();
   if (_token && now < _tokenExp) return _token;
@@ -36,9 +26,7 @@ async function getToken() {
   return _token;
 }
 
-// Handler principal
 exports.handler = async (event) => {
-  // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -46,15 +34,11 @@ exports.handler = async (event) => {
     'Content-Type': 'application/json'
   };
 
-  // Preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
   try {
-    // Pega o path e método da requisição
-    // Chamada: POST /.netlify/functions/nuvemfiscal
-    // Body: { method, path, body }
     const { method, path, body: reqBody } = JSON.parse(event.body || '{}');
 
     if (!path) {
@@ -77,9 +61,15 @@ exports.handler = async (event) => {
 
     const url = `${NF_BASE_URL}${path}`;
     console.log(`[NuvemFiscal] ${method} ${url}`);
+    if (reqBody) console.log(`[NuvemFiscal] Body:`, JSON.stringify(reqBody).substring(0, 500));
 
     const resp = await fetch(url, fetchOpts);
-    const data = await resp.json().catch(() => ({}));
+    const text = await resp.text();
+    
+    let data;
+    try { data = JSON.parse(text); } catch(e) { data = { raw: text }; }
+
+    console.log(`[NuvemFiscal] Response ${resp.status}:`, JSON.stringify(data).substring(0, 500));
 
     return {
       statusCode: resp.status,
